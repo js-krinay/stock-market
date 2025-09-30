@@ -1,0 +1,182 @@
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { GameState, Stock } from '@/types'
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts'
+
+interface StockDetailsDialogProps {
+  stock: Stock | null
+  gameState: GameState
+  onClose: () => void
+}
+
+export function StockDetailsDialog({ stock, gameState, onClose }: StockDetailsDialogProps) {
+  if (!stock) return null
+
+  return (
+    <Dialog open={!!stock} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <span className="w-4 h-4 rounded" style={{ backgroundColor: stock.color }} />
+            {stock.name} ({stock.symbol})
+          </DialogTitle>
+          <DialogDescription>{stock.sector} Sector</DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          {/* Current Price Info */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm text-muted-foreground">Current Price</p>
+              <p className="text-2xl font-bold">${stock.price.toFixed(2)}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Available Shares</p>
+              <p className="text-2xl font-bold">{stock.availableQuantity.toLocaleString()}</p>
+            </div>
+          </div>
+
+          {/* Price History Chart */}
+          <div>
+            <h3 className="text-sm font-semibold mb-2">Price History</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={stock.priceHistory}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="round"
+                  label={{ value: 'Round', position: 'insideBottom', offset: -5 }}
+                />
+                <YAxis
+                  label={{ value: 'Price ($)', angle: -90, position: 'insideLeft' }}
+                  domain={['auto', 'auto']}
+                />
+                <Tooltip
+                  formatter={(value: number) => [`$${value.toFixed(2)}`, 'Price']}
+                  labelFormatter={(label) => `Round ${label}`}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="price"
+                  stroke={stock.color}
+                  strokeWidth={2}
+                  dot={{ fill: stock.color, r: 4 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Price Statistics */}
+          {stock.priceHistory.length > 1 && (
+            <div className="grid grid-cols-3 gap-4 pt-4 border-t">
+              <div>
+                <p className="text-xs text-muted-foreground">Starting Price</p>
+                <p className="text-lg font-semibold">${stock.priceHistory[0].price.toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Highest Price</p>
+                <p className="text-lg font-semibold">
+                  ${Math.max(...stock.priceHistory.map((h) => h.price)).toFixed(2)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Lowest Price</p>
+                <p className="text-lg font-semibold">
+                  ${Math.min(...stock.priceHistory.map((h) => h.price)).toFixed(2)}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Events Affecting This Stock */}
+          <div className="pt-4 border-t">
+            <h3 className="text-sm font-semibold mb-3">Events Affecting {stock.symbol}</h3>
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {gameState.eventHistory
+                .filter((event) => event.affectedSectors.includes(stock.sector))
+                .map((event, idx) => {
+                  const isPositive = event.type === 'positive' || event.type === 'bull_run'
+
+                  const getEventColors = () => {
+                    if (isPositive) {
+                      switch (event.severity) {
+                        case 'low':
+                          return 'bg-green-100 text-green-800 border-green-200'
+                        case 'medium':
+                          return 'bg-green-200 text-green-900 border-green-300'
+                        case 'high':
+                          return 'bg-green-600 text-white border-green-700'
+                        case 'extreme':
+                          return 'bg-green-800 text-white border-green-900'
+                        default:
+                          return 'bg-green-100 text-green-800 border-green-200'
+                      }
+                    } else {
+                      switch (event.severity) {
+                        case 'low':
+                          return 'bg-red-100 text-red-800 border-red-200'
+                        case 'medium':
+                          return 'bg-red-200 text-red-900 border-red-300'
+                        case 'high':
+                          return 'bg-red-600 text-white border-red-700'
+                        case 'extreme':
+                          return 'bg-red-800 text-white border-red-900'
+                        default:
+                          return 'bg-red-100 text-red-800 border-red-200'
+                      }
+                    }
+                  }
+
+                  const eventColors = getEventColors()
+                  const typeEmoji = isPositive ? '📈' : '📉'
+                  const impactSign = event.impact > 0 ? '+' : ''
+
+                  return (
+                    <div key={idx} className={`text-xs border rounded p-2 ${eventColors}`}>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span>{typeEmoji}</span>
+                            <span className="font-semibold">{event.title}</span>
+                            <span className="px-1.5 py-0.5 rounded text-xs bg-black/10">
+                              {event.severity}
+                            </span>
+                          </div>
+                          <p className="opacity-90">{event.description}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs opacity-75">Round {event.round}</p>
+                          <p className="font-semibold">
+                            {impactSign}${Math.abs(event.impact).toFixed(2)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              {gameState.eventHistory.filter((event) =>
+                event.affectedSectors.includes(stock.sector)
+              ).length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No events have affected this stock yet
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
