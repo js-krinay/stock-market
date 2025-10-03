@@ -56,10 +56,9 @@ export function PortfolioTable({ gameState, currentPlayer, portfolio }: Portfoli
           </TableHeader>
           <TableBody>
             {portfolio.holdings.map((holding) => {
-              const leadership = gameState.stockLeadership.find((l) => l.symbol === holding.symbol)
-              const isChairman = leadership?.chairmanId === currentPlayer.id
-              const isDirector = leadership?.directorId === currentPlayer.id
               const stock = gameState.stocks.find((s) => s.symbol === holding.symbol)
+              const isChairman = stock?.chairmanId === currentPlayer.id
+              const isDirector = stock?.directorId === currentPlayer.id
               const ownershipPct = stock
                 ? ((holding.quantity / stock.totalQuantity) * 100).toFixed(1)
                 : '0'

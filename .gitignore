@@ -5,3 +5,7 @@ dist
 playwright-report
 tests/screenshots
 test-results
+
+/generated/prisma
+
+*/**.db

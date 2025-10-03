@@ -8,96 +8,148 @@ import { AllPlayersTable } from './AllPlayersTable'
 import { PortfolioTable } from './PortfolioTable'
 import { StockDetailsDialog } from './StockDetailsDialog'
 import { toast } from 'sonner'
+import { trpc } from '@/utils/trpc'
 
 export function FullGameScreen() {
-  const gameState = useGameStore((state) => state.gameState)
-  const game = useGameStore((state) => state.game)
-  const executeTrade = useGameStore((state) => state.executeTrade)
-  const endTurn = useGameStore((state) => state.endTurn)
+  const gameId = useGameStore((state) => state.gameId)
   const setView = useGameStore((state) => state.setView)
   const isProcessingRound = useGameStore((state) => state.isProcessingRound)
+  const setProcessingRound = useGameStore((state) => state.setProcessingRound)
 
   const [tradeSymbol, setTradeSymbol] = useState('')
-  const [message, setMessage] = useState<string | null>(null)
   const [selectedStockDetails, setSelectedStockDetails] = useState<Stock | null>(null)
 
-  if (!gameState || !game) {
-    return <div>Loading...</div>
+  const { data: gameState, isLoading } = trpc.game.getGameState.useQuery(
+    { gameId: gameId! },
+    { enabled: !!gameId, refetchInterval: false }
+  )
+
+  const utils = trpc.useUtils()
+
+  const executeTradeMutation = trpc.game.executeTrade.useMutation({
+    onSuccess: (result) => {
+      if (result.success) {
+        toast.success('Trade Successful', {
+          description: result.message,
+          duration: 3000,
+        })
+        setTradeSymbol('')
+
+        // Show toasts if any (for dividends/bonus issues)
+        if (result.toasts && result.toasts.length > 0) {
+          result.toasts.forEach((toastData) => {
+            toast.success(toastData.playerName, {
+              description: toastData.message,
+              duration: 5000,
+            })
+          })
+        }
+
+        // Automatically end turn after successful trade
+        endTurnMutation.mutate({ gameId: gameId! })
+      } else {
+        toast.error('Trade Failed', {
+          description: result.message,
+          duration: 3000,
+        })
+      }
+    },
+    onError: (error) => {
+      toast.error('Error', {
+        description: error.message,
+        duration: 3000,
+      })
+    },
+  })
+
+  const endTurnMutation = trpc.game.endTurn.useMutation({
+    onSuccess: async (result) => {
+      if (result.roundEnded) {
+        setProcessingRound(true)
+        await new Promise((resolve) => setTimeout(resolve, 2000))
+        setProcessingRound(false)
+      }
+
+      // Refetch game state
+      await utils.game.getGameState.invalidate()
+
+      if (result.gameOver) {
+        setView('leaderboard')
+      }
+    },
+  })
+
+  // Early return after all hooks
+  if (isLoading || !gameState) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-lg">Loading game...</p>
+        </div>
+      </div>
+    )
   }
 
   const currentPlayer = gameState.players[gameState.currentPlayerIndex]
-  const portfolio = game.getPlayerPortfolio(currentPlayer.id)
+
+  // Calculate portfolio value
+  const portfolioValue = currentPlayer.portfolio.reduce((total, holding) => {
+    const stock = gameState.stocks.find((s) => s.symbol === holding.symbol)
+    return total + (stock ? stock.price * holding.quantity : 0)
+  }, 0)
+
+  const portfolio = {
+    cash: currentPlayer.cash,
+    holdings: currentPlayer.portfolio.map((holding) => {
+      const stock = gameState.stocks.find((s) => s.symbol === holding.symbol)
+      const currentPrice = stock?.price || 0
+      const totalValue = currentPrice * holding.quantity
+      const costBasis = holding.averageCost * holding.quantity
+      const profitLoss = totalValue - costBasis
+      const profitLossPercent = (profitLoss / costBasis) * 100
+
+      return {
+        symbol: holding.symbol,
+        quantity: holding.quantity,
+        averageCost: holding.averageCost,
+        currentPrice,
+        totalValue: Math.round(totalValue * 100) / 100,
+        profitLoss: Math.round(profitLoss * 100) / 100,
+        profitLossPercent: Math.round(profitLossPercent * 100) / 100,
+      }
+    }),
+    totalValue: currentPlayer.cash + portfolioValue,
+  }
 
   const handleTrade = async (type: 'buy' | 'sell', symbol: string, quantity: number) => {
-    const result = executeTrade({
-      type,
-      symbol,
-      quantity,
+    executeTradeMutation.mutate({
+      gameId: gameId!,
+      action: { type, symbol, quantity },
     })
-
-    if (result) {
-      setMessage(result.message)
-      setTimeout(() => setMessage(null), 3000)
-
-      if (result.success) {
-        setTradeSymbol('')
-
-        // Automatically end turn after successful trade
-        const turnResult = await endTurn()
-        if (turnResult?.gameOver) {
-          setView('leaderboard')
-        }
-      }
-    }
   }
 
   const handleSkip = async () => {
-    const result = executeTrade({ type: 'skip' })
-
-    if (result) {
-      setMessage(result.message)
-      setTimeout(() => setMessage(null), 3000)
-
-      // Automatically end turn after skipping
-      if (result.success) {
-        const turnResult = await endTurn()
-        if (turnResult?.gameOver) {
-          setView('leaderboard')
-        }
-      }
-    }
+    executeTradeMutation.mutate({
+      gameId: gameId!,
+      action: { type: 'skip' },
+    })
   }
 
-  const handlePlayCorporateAction = async (actionId: string, quantity?: number, stockSymbol?: string) => {
-    const result = executeTrade({
-      type: 'play_corporate_action',
-      corporateActionId: actionId,
-      quantity,
-      symbol: stockSymbol,
+  const handlePlayCorporateAction = async (
+    actionId: string,
+    quantity?: number,
+    stockSymbol?: string
+  ) => {
+    executeTradeMutation.mutate({
+      gameId: gameId!,
+      action: {
+        type: 'play_corporate_action',
+        corporateActionId: actionId,
+        quantity,
+        symbol: stockSymbol,
+      },
     })
-
-    if (result) {
-      setMessage(result.message)
-      setTimeout(() => setMessage(null), 3000)
-
-      // Show toasts if any (for dividends/bonus issues)
-      if (result.toasts && result.toasts.length > 0) {
-        result.toasts.forEach((toastData) => {
-          toast.success(toastData.playerName, {
-            description: toastData.message,
-            duration: 5000,
-          })
-        })
-      }
-
-      // Automatically end turn after playing corporate action
-      if (result.success) {
-        const turnResult = await endTurn()
-        if (turnResult?.gameOver) {
-          setView('leaderboard')
-        }
-      }
-    }
   }
 
   return (
@@ -124,7 +176,6 @@ export function FullGameScreen() {
             onTrade={handleTrade}
             onSkip={handleSkip}
             onPlayCorporateAction={handlePlayCorporateAction}
-            message={message}
           />
         </div>
 
@@ -132,7 +183,7 @@ export function FullGameScreen() {
         <PortfolioTable gameState={gameState} currentPlayer={currentPlayer} portfolio={portfolio} />
 
         {/* All Players */}
-        <AllPlayersTable gameState={gameState} game={game} currentPlayer={currentPlayer} />
+        <AllPlayersTable gameState={gameState} currentPlayer={currentPlayer} />
       </div>
 
       {/* Stock Details Dialog */}
@@ -154,7 +205,6 @@ export function FullGameScreen() {
           </div>
         </div>
       )}
-
     </div>
   )
 }

@@ -33,7 +33,7 @@ export function StockDetailsDialog({ stock, gameState, onClose }: StockDetailsDi
             <span className="w-4 h-4 rounded" style={{ backgroundColor: stock.color }} />
             {stock.name} ({stock.symbol})
           </DialogTitle>
-          <DialogDescription>{stock.sector} Sector</DialogDescription>
+          <DialogDescription>Stock Symbol: {stock.symbol}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -105,7 +105,11 @@ export function StockDetailsDialog({ stock, gameState, onClose }: StockDetailsDi
             <h3 className="text-sm font-semibold mb-3">Events Affecting {stock.symbol}</h3>
             <div className="space-y-2 max-h-60 overflow-y-auto">
               {gameState.eventHistory
-                .filter((event) => event.affectedSectors.includes(stock.sector))
+                .filter(
+                  (event) =>
+                    event.affectedStocks.includes(stock.symbol) &&
+                    event.round <= gameState.currentRound
+                )
                 .map((event, idx) => {
                   const isPositive = event.type === 'positive' || event.type === 'bull_run'
 
@@ -166,8 +170,10 @@ export function StockDetailsDialog({ stock, gameState, onClose }: StockDetailsDi
                     </div>
                   )
                 })}
-              {gameState.eventHistory.filter((event) =>
-                event.affectedSectors.includes(stock.sector)
+              {gameState.eventHistory.filter(
+                (event) =>
+                  event.affectedStocks.includes(stock.symbol) &&
+                  event.round <= gameState.currentRound
               ).length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-4">
                   No events have affected this stock yet

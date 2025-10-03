@@ -136,12 +136,11 @@ export function StockMarketTable({
                 lastRoundPrice !== 0 ? (priceChange / lastRoundPrice) * 100 : 0
 
               // Get leadership info for this stock
-              const leadership = gameState.stockLeadership.find((l) => l.symbol === stock.symbol)
-              const chairman = leadership?.chairmanId
-                ? gameState.players.find((p) => p.id === leadership.chairmanId)
+              const chairman = stock.chairmanId
+                ? gameState.players.find((p) => p.id === stock.chairmanId)
                 : null
-              const director = leadership?.directorId
-                ? gameState.players.find((p) => p.id === leadership.directorId)
+              const director = stock.directorId
+                ? gameState.players.find((p) => p.id === stock.directorId)
                 : null
 
               return (

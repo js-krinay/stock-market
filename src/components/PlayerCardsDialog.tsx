@@ -1,9 +1,4 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { GameCard, MarketEvent, CorporateAction } from '@/types'
 
@@ -15,7 +10,6 @@ interface PlayerCardsDialogProps {
 }
 
 export function PlayerCardsDialog({ playerName, cards, isOpen, onClose }: PlayerCardsDialogProps) {
-
   const getEventBgColor = (event: MarketEvent) => {
     const isPositive = event.type === 'positive' || event.type === 'bull_run'
 
@@ -82,34 +76,24 @@ export function PlayerCardsDialog({ playerName, cards, isOpen, onClose }: Player
                 <div
                   className={`p-3 ${getEventBgColor(card.data as MarketEvent)} h-48 flex flex-col`}
                 >
-                  <div className="font-bold text-sm mb-2 line-clamp-2">
-                    {card.data.title}
-                  </div>
-                  <div className="text-xs mb-2 line-clamp-4 flex-1">
-                    {card.data.description}
-                  </div>
+                  <div className="font-bold text-sm mb-2 line-clamp-2">{card.data.title}</div>
+                  <div className="text-xs mb-2 line-clamp-4 flex-1">{card.data.description}</div>
                   <div className="text-xs font-semibold mt-auto">
                     Impact: {(card.data as MarketEvent).impact > 0 ? '+' : ''}$
                     {(card.data as MarketEvent).impact}
                   </div>
                   <div className="text-xs opacity-80 mt-1 line-clamp-2">
-                    {(card.data as MarketEvent).affectedSectors.join(', ')}
+                    Stocks: {(card.data as MarketEvent).affectedStocks.join(', ')}
                   </div>
                 </div>
               ) : (
                 <div
                   className={`p-3 ${getCorporateActionBgColor((card.data as CorporateAction).type)} h-48 flex flex-col`}
                 >
-                  <div className="font-bold text-sm mb-2 line-clamp-2">
-                    {card.data.title}
-                  </div>
-                  <div className="text-xs mb-2 line-clamp-4 flex-1">
-                    {card.data.description}
-                  </div>
+                  <div className="font-bold text-sm mb-2 line-clamp-2">{card.data.title}</div>
+                  <div className="text-xs mb-2 line-clamp-4 flex-1">{card.data.description}</div>
                   <div className="text-xs font-semibold mt-auto">
-                    {(card.data as CorporateAction).played
-                      ? '✅ Played'
-                      : '⏳ Available'}
+                    {(card.data as CorporateAction).played ? '✅ Played' : '⏳ Available'}
                   </div>
                 </div>
               )}

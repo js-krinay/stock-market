@@ -1,0 +1,194 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Main game session
+model Game {
+  id                  String   @id @default(cuid())
+  currentRound        Int      @default(1)
+  maxRounds           Int
+  currentTurnInRound  Int      @default(1)
+  turnsPerRound       Int      @default(3)
+  currentPlayerIndex  Int      @default(0)
+  isComplete          Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  players                     Player[]
+  stocks                      Stock[]
+  cards                       GameCard[]
+  events                      MarketEvent[]
+  corporateActions            CorporateAction[]
+}
+
+// Player in a game
+model Player {
+  id                 String @id @default(cuid())
+  name               String
+  cash               Float  @default(10000)
+  currentTurnIndex   Int    @default(0)
+  gameId             String
+  game               Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  portfolio          StockHolding[]
+  actionHistory      TurnAction[]
+  cards              GameCard[]
+  stocksAsDirector   Stock[]       @relation("StockDirector")
+  stocksAsChairman   Stock[]       @relation("StockChairman")
+
+  @@index([gameId])
+}
+
+// Stock in the market
+model Stock {
+  id                String   @id @default(cuid())
+  symbol            String
+  name              String
+  price             Float
+  availableQuantity Int
+  totalQuantity     Int
+  color             String
+  gameId            String
+  game              Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  // Leadership fields (merged from StockLeadership)
+  directorId        String?
+  director          Player?  @relation("StockDirector", fields: [directorId], references: [id])
+  chairmanId        String?
+  chairman          Player?  @relation("StockChairman", fields: [chairmanId], references: [id])
+  directorSince     DateTime @default(now())
+  chairmanSince     DateTime @default(now())
+
+  holdings      StockHolding[]
+  priceHistory  PriceHistory[]
+
+  @@unique([gameId, symbol])
+  @@index([gameId])
+  @@index([directorId])
+  @@index([chairmanId])
+}
+
+// Stock holding (portfolio item)
+model StockHolding {
+  id          String @id @default(cuid())
+  symbol      String
+  quantity    Int
+  averageCost Float
+  playerId    String
+  player      Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  stockId     String
+  stock       Stock  @relation(fields: [stockId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, symbol])
+  @@index([playerId])
+  @@index([stockId])
+}
+
+// Price history for charts
+model PriceHistory {
+  id      String @id @default(cuid())
+  round   Int
+  price   Float
+  stockId String
+  stock   Stock  @relation(fields: [stockId], references: [id], onDelete: Cascade)
+
+  @@index([stockId])
+}
+
+// Turn action log
+model TurnAction {
+  id         String   @id @default(cuid())
+  round      Int
+  turn       Int
+  actionType String // 'buy' | 'sell' | 'skip' | 'play_corporate_action' | 'dividend_received' | 'bonus_received' | 'inflation_loss' | 'deflation_gain'
+  symbol     String?
+  quantity   Int?
+  price      Float?
+  totalValue Float?
+  result     String
+  timestamp  DateTime @default(now())
+  corporateActionId String?
+  playerId   String
+  player     Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId])
+}
+
+// Market event
+model MarketEvent {
+  id               String  @id @default(cuid())
+  eventId          String // Original event ID from event pool
+  type             String // 'positive' | 'negative' | 'neutral' | 'crash' | 'bull_run'
+  severity         String // 'low' | 'medium' | 'high' | 'extreme'
+  title            String
+  description      String
+  affectedStocks   String // JSON array of stock symbols
+  impact           Float
+  round            Int
+  turn             Int?
+  playerId         String?
+  priceDiff        String? // JSON object { [symbol: string]: number }
+  actualImpact     String? // JSON object { [symbol: string]: number }
+  gameId           String
+  game             Game    @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  cards            GameCard[]
+
+  @@index([gameId])
+}
+
+// Corporate action
+model CorporateAction {
+  id                  String   @id @default(cuid())
+  actionId            String // Unique action ID
+  type                String // 'dividend' | 'right_issue' | 'bonus_issue'
+  symbol              String?
+  title               String
+  description         String
+  details             String // JSON for DividendDetails | RightIssueDetails | BonusIssueDetails
+  round               Int
+  createdAtTurn       Int
+  playersProcessed    String // JSON array of player IDs
+  playerId            String?
+  played              Boolean  @default(false)
+  // Rights issue expiry tracking
+  status              String?  @default("pending") // 'pending' | 'active' | 'expired'
+  expiresAtPlayerId   String? // Player who played it (expires when their turn comes again)
+  eligiblePlayerIds   String? // JSON array of player IDs who were eligible when card was played
+  gameId              String
+  game                Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  cards               GameCard[]
+
+  @@index([gameId])
+}
+
+// Game card (event or corporate action card)
+model GameCard {
+  id                String  @id @default(cuid())
+  cardId            String // Unique card ID
+  type              String // 'event' | 'corporate_action'
+  dataType          String // For type discrimination ('MarketEvent' | 'CorporateAction')
+  dataId            String // Reference to MarketEvent.id or CorporateAction.id
+  playerId          String
+  player            Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  round             Int
+  turnIndex         Int
+  gameId            String
+  game              Game    @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  eventId           String?
+  event             MarketEvent? @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  corporateActionId String?
+  corporateAction   CorporateAction? @relation(fields: [corporateActionId], references: [id], onDelete: Cascade)
+
+  @@index([playerId])
+  @@index([gameId])
+  @@index([eventId])
+  @@index([corporateActionId])
+}
+

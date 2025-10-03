@@ -11,16 +11,19 @@ npx playwright install chromium
 ## Running Tests
 
 ### Run all tests (headless)
+
 ```bash
 npm test
 ```
 
 ### Run tests with UI (interactive mode)
+
 ```bash
 npm run test:ui
 ```
 
 ### Run tests in headed mode (see browser)
+
 ```bash
 npm run test:headed
 ```
@@ -28,7 +31,9 @@ npm run test:headed
 ## Test Coverage
 
 ### `game-flow.spec.ts`
+
 Tests a complete 3-player, 5-round game simulation:
+
 - Sets up game with 3 players (Alice, Bob, Charlie)
 - Configures 5 rounds
 - Each player takes 10 turns per round (30 turns per round total)

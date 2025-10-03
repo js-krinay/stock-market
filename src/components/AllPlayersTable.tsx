@@ -10,17 +10,15 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { GameState, Player } from '@/types'
-import { GameEngine } from '@/game'
 import { PlayerCardsDialog } from './PlayerCardsDialog'
 import { PlayerLogsDialog } from './PlayerLogsDialog'
 
 interface AllPlayersTableProps {
   gameState: GameState
-  game: GameEngine
   currentPlayer: Player
 }
 
-export function AllPlayersTable({ gameState, game, currentPlayer }: AllPlayersTableProps) {
+export function AllPlayersTable({ gameState, currentPlayer }: AllPlayersTableProps) {
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null)
   const [logsPlayer, setLogsPlayer] = useState<Player | null>(null)
 
@@ -44,7 +42,13 @@ export function AllPlayersTable({ gameState, game, currentPlayer }: AllPlayersTa
             </TableHeader>
             <TableBody>
               {gameState.players.map((player) => {
-                const playerPortfolio = game.getPlayerPortfolio(player.id)
+                // Calculate net worth
+                const portfolioValue = player.portfolio.reduce((total, holding) => {
+                  const stock = gameState.stocks.find((s) => s.symbol === holding.symbol)
+                  return total + (stock ? stock.price * holding.quantity : 0)
+                }, 0)
+                const totalValue = player.cash + portfolioValue
+
                 return (
                   <TableRow
                     key={player.id}
@@ -56,22 +60,14 @@ export function AllPlayersTable({ gameState, game, currentPlayer }: AllPlayersTa
                     </TableCell>
                     <TableCell>${player.cash.toFixed(2)}</TableCell>
                     <TableCell>{player.portfolio.length}</TableCell>
-                    <TableCell>${playerPortfolio?.totalValue.toFixed(2)}</TableCell>
+                    <TableCell>${totalValue.toFixed(2)}</TableCell>
                     <TableCell>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setSelectedPlayer(player)}
-                      >
+                      <Button variant="outline" size="sm" onClick={() => setSelectedPlayer(player)}>
                         View Cards
                       </Button>
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setLogsPlayer(player)}
-                      >
+                      <Button variant="outline" size="sm" onClick={() => setLogsPlayer(player)}>
                         View Logs
                       </Button>
                     </TableCell>
@@ -86,7 +82,7 @@ export function AllPlayersTable({ gameState, game, currentPlayer }: AllPlayersTa
       {selectedPlayer && (
         <PlayerCardsDialog
           playerName={selectedPlayer.name}
-          cards={game.getPlayerCards(selectedPlayer.id)}
+          cards={selectedPlayer.cards}
           isOpen={!!selectedPlayer}
           onClose={() => setSelectedPlayer(null)}
         />

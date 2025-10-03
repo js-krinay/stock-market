@@ -9,17 +9,38 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useGameStore } from '@/store/gameStore'
+import { trpc } from '@/utils/trpc'
 
 export function Leaderboard() {
-  const game = useGameStore((state) => state.game)
-  const gameState = useGameStore((state) => state.gameState)
+  const gameId = useGameStore((state) => state.gameId)
   const setView = useGameStore((state) => state.setView)
+  const setGameId = useGameStore((state) => state.setGameId)
 
-  if (!game || !gameState) {
-    return <div>Loading...</div>
+  const { data: gameState } = trpc.game.getGameState.useQuery(
+    { gameId: gameId! },
+    { enabled: !!gameId }
+  )
+
+  const { data: rankings, isLoading } = trpc.game.getPlayerRankings.useQuery(
+    { gameId: gameId! },
+    { enabled: !!gameId }
+  )
+
+  if (isLoading || !rankings || !gameState) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-lg">Loading leaderboard...</p>
+        </div>
+      </div>
+    )
   }
 
-  const rankings = game.getPlayerRankings()
+  const handleNewGame = () => {
+    setGameId('')
+    setView('setup')
+  }
 
   return (
     <div className="min-h-screen bg-background p-4">
@@ -90,7 +111,7 @@ export function Leaderboard() {
                 <strong>{rankings[0].player.name}</strong> wins with a net worth of{' '}
                 <strong className="text-green-600">${rankings[0].totalValue.toFixed(2)}</strong>!
               </p>
-              <Button onClick={() => setView('setup')}>Start New Game</Button>
+              <Button onClick={handleNewGame}>Start New Game</Button>
             </CardContent>
           </Card>
         )}

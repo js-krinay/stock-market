@@ -66,9 +66,7 @@ test.describe('Stock Market Game - 3 Players, 5 Rounds', () => {
               if (hasEventCard) {
                 console.log(`  ${currentPlayer} - Turn ${turn}: Event card displayed`)
               } else if (hasCorporateActionCard) {
-                console.log(
-                  `  ${currentPlayer} - Turn ${turn}: Corporate action card displayed`
-                )
+                console.log(`  ${currentPlayer} - Turn ${turn}: Corporate action card displayed`)
               }
 
               // Make a random action
@@ -84,9 +82,7 @@ test.describe('Stock Market Game - 3 Players, 5 Rounds', () => {
               } else if (actionChoice < 0.65 && hasCorporateActionCard) {
                 // 35% - Try to play corporate action if available
                 // Check if there are unplayed corporate actions
-                const playActionButton = page
-                  .locator('button:has-text("Play Action")')
-                  .first()
+                const playActionButton = page.locator('button:has-text("Play Action")').first()
                 if (await playActionButton.isVisible().catch(() => false)) {
                   await playActionButton.click()
                   console.log(`  ${currentPlayer} - Action: Played corporate action`)
@@ -225,9 +221,18 @@ test.describe('Stock Market Game - 3 Players, 5 Rounds', () => {
     await test.step('Verify game completion', async () => {
       // Wait for game over screen or leaderboard
       const gameOverIndicator =
-        (await page.locator('text=Game Over').isVisible({ timeout: 3000 }).catch(() => false)) ||
-        (await page.locator('text=Final Rankings').isVisible().catch(() => false)) ||
-        (await page.locator('text=Winner').isVisible().catch(() => false))
+        (await page
+          .locator('text=Game Over')
+          .isVisible({ timeout: 3000 })
+          .catch(() => false)) ||
+        (await page
+          .locator('text=Final Rankings')
+          .isVisible()
+          .catch(() => false)) ||
+        (await page
+          .locator('text=Winner')
+          .isVisible()
+          .catch(() => false))
 
       console.log('\n=== Game Completed ===')
       console.log('Final game state reached')
