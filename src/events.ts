@@ -3,8 +3,6 @@ import { MarketEvent } from './types'
 export class EventSystem {
   private eventPool: MarketEvent[]
   private usedEventIds: Set<string>
-  private lastCrashRound: number = 0
-  private lastBullRunRound: number = 0
 
   constructor() {
     this.eventPool = this.createEventPool()
@@ -582,7 +580,6 @@ export class EventSystem {
     if (Math.random() > 0.05) {
       return null
     }
-    this.lastCrashRound = currentRound
     // Pick a random sector for the crash
     const sectors = ['Technology', 'Finance', 'Energy', 'Healthcare', 'Consumer', 'Automotive']
     const crashSector = sectors[Math.floor(Math.random() * sectors.length)]
@@ -607,7 +604,6 @@ export class EventSystem {
     if (Math.random() > 0.05) {
       return null
     }
-    this.lastBullRunRound = currentRound
     // Pick a random sector for the bull run
     const sectors = ['Technology', 'Finance', 'Energy', 'Healthcare', 'Consumer', 'Automotive']
     const bullSector = sectors[Math.floor(Math.random() * sectors.length)]
@@ -625,7 +621,5 @@ export class EventSystem {
 
   reset(): void {
     this.usedEventIds.clear()
-    this.lastCrashRound = 0
-    this.lastBullRunRound = 0
   }
 }
