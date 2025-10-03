@@ -13,9 +13,7 @@ export class EventSystem {
     const events: MarketEvent[] = []
     for (let i = 0; i < count; i++) {
       const event = this.getRandomEvent(currentRound)
-      if (event) {
-        events.push(event)
-      }
+      events.push(event)
     }
     return events
   }
@@ -538,21 +536,20 @@ export class EventSystem {
     return 'extreme' // 30 or higher
   }
 
-  getRandomEvent(currentRound: number): MarketEvent | null {
+  getRandomEvent(currentRound: number): MarketEvent {
     // Check for crash or bull run first (rare events)
     const crashEvent = this.tryGenerateCrash(currentRound)
     if (crashEvent) return crashEvent
     const bullRunEvent = this.tryGenerateBullRun(currentRound)
     if (bullRunEvent) return bullRunEvent
-    // 70% chance of a regular event occurring
-    if (Math.random() > 0.7) {
-      return null
-    }
+
+    // Always return a regular event
     const availableEvents = this.eventPool.filter((event) => !this.usedEventIds.has(event.id))
     if (availableEvents.length === 0) {
       this.usedEventIds.clear()
       return this.getRandomEvent(currentRound)
     }
+
     // Weight events by severity (lower severity more common)
     const weightedEvents: MarketEvent[] = []
     availableEvents.forEach((event) => {

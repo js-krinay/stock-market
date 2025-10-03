@@ -58,7 +58,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         set({ isProcessingRound: true })
 
         // Simulate processing delay for visual feedback
-        await new Promise((resolve) => setTimeout(resolve, 1500))
+        await new Promise((resolve) => setTimeout(resolve, 2000))
 
         set({
           gameState: game.getGameState(),

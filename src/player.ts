@@ -8,6 +8,8 @@ export class PlayerManager {
       cash: startingCash,
       portfolio: [],
       actionHistory: [],
+      cards: [],
+      currentTurnIndex: 0,
     }
   }
 

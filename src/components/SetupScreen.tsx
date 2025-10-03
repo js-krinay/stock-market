@@ -6,12 +6,14 @@ import { useGameStore } from '@/store/gameStore'
 
 export function SetupScreen() {
   const [playerCount, setPlayerCount] = useState(2)
-  const [playerNames, setPlayerNames] = useState(['Player 1', 'Player 2', '', ''])
+  const [playerNames, setPlayerNames] = useState(
+    Array.from({ length: 24 }, (_, i) => (i < 2 ? `Player ${i + 1}` : ''))
+  )
   const [rounds, setRounds] = useState(10)
   const startGame = useGameStore((state) => state.startGame)
 
   const handlePlayerCountChange = (count: number) => {
-    const validCount = Math.max(1, Math.min(4, count))
+    const validCount = Math.max(2, Math.min(24, count))
     setPlayerCount(validCount)
   }
 
@@ -23,8 +25,8 @@ export function SetupScreen() {
 
   const handleStartGame = () => {
     const validNames = playerNames.slice(0, playerCount).filter((name) => name.trim().length > 0)
-    if (validNames.length === 0) {
-      alert('Please enter at least one player name!')
+    if (validNames.length < 2) {
+      alert('Please enter at least 2 player names!')
       return
     }
     startGame(validNames, rounds)
@@ -41,13 +43,13 @@ export function SetupScreen() {
         </CardHeader>
         <CardContent className="space-y-6">
           <div>
-            <label className="block text-sm font-medium mb-2">Number of Players (1-4)</label>
+            <label className="block text-sm font-medium mb-2">Number of Players (2-24)</label>
             <Input
               type="number"
-              min={1}
-              max={4}
+              min={2}
+              max={24}
               value={playerCount}
-              onChange={(e) => handlePlayerCountChange(parseInt(e.target.value) || 1)}
+              onChange={(e) => handlePlayerCountChange(parseInt(e.target.value) || 2)}
               className="w-full"
             />
           </div>

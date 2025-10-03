@@ -5,9 +5,9 @@ import { GameHeader } from './GameHeader'
 import { StockMarketTable } from './StockMarketTable'
 import { TradePanel } from './TradePanel'
 import { AllPlayersTable } from './AllPlayersTable'
-import { EventsTicker } from './EventsTicker'
 import { PortfolioTable } from './PortfolioTable'
 import { StockDetailsDialog } from './StockDetailsDialog'
+import { toast } from 'sonner'
 
 export function FullGameScreen() {
   const gameState = useGameStore((state) => state.gameState)
@@ -68,14 +68,43 @@ export function FullGameScreen() {
     }
   }
 
+  const handlePlayCorporateAction = async (actionId: string, quantity?: number, stockSymbol?: string) => {
+    const result = executeTrade({
+      type: 'play_corporate_action',
+      corporateActionId: actionId,
+      quantity,
+      symbol: stockSymbol,
+    })
+
+    if (result) {
+      setMessage(result.message)
+      setTimeout(() => setMessage(null), 3000)
+
+      // Show toasts if any (for dividends/bonus issues)
+      if (result.toasts && result.toasts.length > 0) {
+        result.toasts.forEach((toastData) => {
+          toast.success(toastData.playerName, {
+            description: toastData.message,
+            duration: 5000,
+          })
+        })
+      }
+
+      // Automatically end turn after playing corporate action
+      if (result.success) {
+        const turnResult = await endTurn()
+        if (turnResult?.gameOver) {
+          setView('leaderboard')
+        }
+      }
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="container mx-auto space-y-4">
         {/* Header */}
         <GameHeader gameState={gameState} onViewLeaderboard={() => setView('leaderboard')} />
-
-        {/* Market News Ticker */}
-        <EventsTicker gameState={gameState} />
 
         <div className="grid md:grid-cols-2 gap-4">
           {/* Stock Market */}
@@ -94,6 +123,7 @@ export function FullGameScreen() {
             onSelectSymbol={setTradeSymbol}
             onTrade={handleTrade}
             onSkip={handleSkip}
+            onPlayCorporateAction={handlePlayCorporateAction}
             message={message}
           />
         </div>
@@ -124,6 +154,7 @@ export function FullGameScreen() {
           </div>
         </div>
       )}
+
     </div>
   )
 }

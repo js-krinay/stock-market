@@ -30,6 +30,8 @@ export interface Player {
   cash: number
   portfolio: StockHolding[]
   actionHistory: TurnAction[]
+  cards: GameCard[] // Cards assigned to this player for the current round
+  currentTurnIndex: number // Which turn (0-9) the player is on in the current round
 }
 
 export interface TurnAction {
@@ -54,18 +56,32 @@ export interface MarketEvent {
   turn?: number // Which turn within the round this event occurred
   priceDiff?: { [symbol: string]: number } // Absolute price change (in dollars) for each stock
   actualImpact?: { [symbol: string]: number } // Percentage price changes applied
+  playerId?: string // Which player received this event card
 }
 
 export interface CorporateAction {
   id: string
   type: 'dividend' | 'right_issue' | 'bonus_issue'
-  symbol: string
+  symbol?: string // Made optional - will be selected by player when playing the card
   title: string
   description: string
   details: DividendDetails | RightIssueDetails | BonusIssueDetails
   round: number // Round when the action was created
   createdAtTurn: number // Turn number when action was created
   playersProcessed: string[] // Track which players have been processed for this action
+  playerId?: string // Which player received this corporate action card
+  played?: boolean // Whether the card has been played
+}
+
+// Card that can be either an event or corporate action
+export interface GameCard {
+  id: string
+  type: 'event' | 'corporate_action'
+  data: MarketEvent | CorporateAction
+  playerId: string
+  round: number
+  turnIndex: number // Which turn (0-9) this card is for
+  shown: boolean // Whether this card has been displayed
 }
 
 export interface DividendDetails {
@@ -91,15 +107,16 @@ export interface GameState {
   players: Player[]
   currentPlayerIndex: number
   stocks: Stock[]
-  recentEvents: MarketEvent[]
-  pendingCorporateActions: CorporateAction[]
+  currentCard: GameCard | null // Currently displayed card
+  accumulatedEvents: MarketEvent[] // Events to be applied at round end
+  accumulatedCorporateActions: CorporateAction[] // Corporate actions to be applied at round end
   eventHistory: MarketEvent[] // All events throughout the game
-  roundEvents: { [round: number]: MarketEvent[] } // Events grouped by round
   stockLeadership: StockLeadership[] // Track directors and chairmen for each stock
 }
 
 export interface TradeAction {
-  type: 'buy' | 'sell' | 'skip'
+  type: 'buy' | 'sell' | 'skip' | 'play_corporate_action' | 'dividend_received' | 'bonus_received'
   symbol?: string
   quantity?: number
+  corporateActionId?: string // For playing corporate action cards
 }

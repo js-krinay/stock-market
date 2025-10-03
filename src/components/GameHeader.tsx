@@ -21,7 +21,7 @@ export function GameHeader({ gameState, onViewLeaderboard }: GameHeaderProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div>
             <p className="text-sm text-muted-foreground">Round</p>
             <p className="text-2xl font-bold">
@@ -41,12 +41,6 @@ export function GameHeader({ gameState, onViewLeaderboard }: GameHeaderProps) {
           <div>
             <p className="text-sm text-muted-foreground">Cash</p>
             <p className="text-2xl font-bold text-green-600">${currentPlayer.cash.toFixed(2)}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Pending Events</p>
-            <p className="text-2xl font-bold text-orange-600">
-              {gameState.roundEvents[gameState.currentRound]?.length || 0}
-            </p>
           </div>
         </div>
       </CardContent>

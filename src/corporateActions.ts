@@ -17,7 +17,7 @@ export class CorporateActionManager {
     const holding = player.portfolio.find((h) => h.symbol === action.symbol)
 
     if (!holding) {
-      return { amount: 0, message: 'No holdings to receive dividend' }
+      return { amount: 0, message: `No ${stock.name} holdings to receive dividend` }
     }
 
     const dividendAmount = holding.quantity * details.amountPerShare
@@ -26,7 +26,7 @@ export class CorporateActionManager {
 
     return {
       amount: dividendAmount,
-      message: `Received dividend: ${holding.quantity} shares × $${details.amountPerShare} = $${dividendAmount.toFixed(2)}`,
+      message: `Received ${stock.name} dividend: ${holding.quantity} shares × $${details.amountPerShare} = $${dividendAmount.toFixed(2)}`,
     }
   }
 
@@ -46,7 +46,7 @@ export class CorporateActionManager {
       return {
         eligibleShares: 0,
         offerPrice: details.price,
-        message: 'No holdings - not eligible for right issue',
+        message: `No ${stock.name} holdings - not eligible for right issue`,
       }
     }
 
@@ -58,14 +58,14 @@ export class CorporateActionManager {
       return {
         eligibleShares: 0,
         offerPrice: details.price,
-        message: `Insufficient shares for right issue (need ${details.baseShares} shares)`,
+        message: `Insufficient ${stock.name} shares for right issue (need ${details.baseShares} shares)`,
       }
     }
 
     return {
       eligibleShares,
       offerPrice: details.price,
-      message: `Eligible for ${eligibleShares} shares at $${details.price.toFixed(2)} each (${details.ratio}:${details.baseShares} ratio)`,
+      message: `Eligible for ${eligibleShares} ${stock.name} shares at $${details.price.toFixed(2)} each (${details.ratio}:${details.baseShares} ratio)`,
     }
   }
 
@@ -79,13 +79,13 @@ export class CorporateActionManager {
     const holding = player.portfolio.find((h) => h.symbol === action.symbol)
 
     if (!holding) {
-      return { success: false, message: 'No holdings - not eligible' }
+      return { success: false, message: `No ${stock.name} holdings - not eligible` }
     }
 
     const eligibleShares = Math.floor(holding.quantity / details.baseShares) * details.ratio
 
     if (sharesToBuy > eligibleShares) {
-      return { success: false, message: `Can only buy up to ${eligibleShares} shares` }
+      return { success: false, message: `Can only buy up to ${eligibleShares} ${stock.name} shares` }
     }
 
     if (sharesToBuy <= 0) {
@@ -109,7 +109,7 @@ export class CorporateActionManager {
 
     return {
       success: true,
-      message: `Purchased ${sharesToBuy} shares at $${details.price.toFixed(2)} for $${totalCost.toFixed(2)}`,
+      message: `Purchased ${sharesToBuy} ${stock.name} shares at $${details.price.toFixed(2)} for $${totalCost.toFixed(2)}`,
     }
   }
 
@@ -124,7 +124,7 @@ export class CorporateActionManager {
     if (!holding) {
       return {
         bonusShares: 0,
-        message: 'No holdings - not eligible for bonus issue',
+        message: `No ${stock.name} holdings - not eligible for bonus issue`,
       }
     }
 
@@ -135,7 +135,7 @@ export class CorporateActionManager {
     if (bonusShares === 0) {
       return {
         bonusShares: 0,
-        message: `Insufficient shares for bonus issue (need ${details.baseShares} shares)`,
+        message: `Insufficient ${stock.name} shares for bonus issue (need ${details.baseShares} shares)`,
       }
     }
 
@@ -148,7 +148,7 @@ export class CorporateActionManager {
 
     return {
       bonusShares,
-      message: `Received ${bonusShares} bonus shares (${details.ratio}:${details.baseShares} ratio). New holding: ${newQuantity} shares`,
+      message: `Received ${bonusShares} bonus ${stock.name} shares (${details.ratio}:${details.baseShares} ratio). New holding: ${newQuantity} shares`,
     }
   }
 
@@ -168,20 +168,19 @@ export class CorporateActionManager {
       'bonus_issue',
     ]
     const type = actionTypes[Math.floor(Math.random() * actionTypes.length)]
-    const stock = stocks[Math.floor(Math.random() * stocks.length)]
 
-    const id = `${type}-${stock.symbol}-${currentRound}-${currentTurn}`
+    const id = `${type}-${currentRound}-${currentTurn}-${Date.now()}`
 
     switch (type) {
       case 'dividend':
         return {
           id,
           type: 'dividend',
-          symbol: stock.symbol,
-          title: `${stock.name} Declares Dividend`,
-          description: `${stock.name} announces dividend payout to shareholders`,
+          // No symbol assigned - player will choose when playing
+          title: `Declare Dividend`,
+          description: `Announce dividend payout to shareholders of selected stock`,
           details: {
-            amountPerShare: Math.round(stock.price * (0.02 + Math.random() * 0.05) * 100) / 100, // 2-7% of stock price
+            amountPerShare: Math.round((50 + Math.random() * 50) * (0.02 + Math.random() * 0.05) * 100) / 100, // 2-7% of average stock price
           } as DividendDetails,
           round: currentRound,
           createdAtTurn: currentTurn,
@@ -193,13 +192,13 @@ export class CorporateActionManager {
         return {
           id,
           type: 'right_issue',
-          symbol: stock.symbol,
-          title: `${stock.name} Announces Right Issue`,
-          description: `${stock.name} offers new shares to existing shareholders at discounted price (1:2 ratio)`,
+          // No symbol assigned - player will choose when playing
+          title: `Announce Right Issue`,
+          description: `Offer new shares to existing shareholders at discounted price (1:2 ratio)`,
           details: {
             ratio: 1,
             baseShares: 2,
-            price: Math.round(stock.price * (0.7 + Math.random() * 0.2) * 100) / 100, // 70-90% of market price
+            price: Math.round((50 + Math.random() * 50) * (0.7 + Math.random() * 0.2) * 100) / 100, // 70-90% of average market price
           } as RightIssueDetails,
           round: currentRound,
           createdAtTurn: currentTurn,
@@ -211,9 +210,9 @@ export class CorporateActionManager {
         return {
           id,
           type: 'bonus_issue',
-          symbol: stock.symbol,
-          title: `${stock.name} Announces Bonus Issue`,
-          description: `${stock.name} issues bonus shares to existing shareholders (1:5 ratio)`,
+          // No symbol assigned - player will choose when playing
+          title: `Announce Bonus Issue`,
+          description: `Issue bonus shares to existing shareholders (1:5 ratio)`,
           details: {
             ratio: 1,
             baseShares: 5,

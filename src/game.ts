@@ -1,25 +1,25 @@
 import { GameState, Player, TradeAction, MarketEvent, CorporateAction } from './types'
 import { StockMarket } from './market'
-import { EventSystem } from './events'
 import { PlayerManager } from './player'
 import { CorporateActionManager } from './corporateActions'
 import { LeadershipManager } from './leadership'
+import { CardManager } from './cardManager'
 import { nanoid } from 'nanoid'
 
 export class GameEngine {
   private gameState: GameState
   private market: StockMarket
-  private eventSystem: EventSystem
   private playerManager: PlayerManager
   private corporateActionManager: CorporateActionManager
   private leadershipManager: LeadershipManager
+  private cardManager: CardManager
 
   constructor(playerNames: string[], maxRounds: number = 10) {
     this.market = new StockMarket()
-    this.eventSystem = new EventSystem()
     this.playerManager = new PlayerManager()
     this.corporateActionManager = new CorporateActionManager()
     this.leadershipManager = new LeadershipManager()
+    this.cardManager = new CardManager()
 
     const players = playerNames.map((name) => this.playerManager.createPlayer(nanoid(), name))
 
@@ -33,15 +33,18 @@ export class GameEngine {
       players,
       currentPlayerIndex: 0,
       stocks,
-      recentEvents: [],
-      pendingCorporateActions: [],
+      currentCard: null,
+      accumulatedEvents: [],
+      accumulatedCorporateActions: [],
       eventHistory: [],
-      roundEvents: {},
       stockLeadership: this.leadershipManager.initializeLeadership(stocks),
     }
 
-    // Generate initial events for the first player's turn
-    this.generateEventsForTurn()
+    // Generate cards for all players for round 1
+    this.generateCardsForRound()
+
+    // Show first card for first player
+    this.showCurrentCard()
   }
 
   getGameState(): GameState {
@@ -52,7 +55,45 @@ export class GameEngine {
     return this.gameState.players[this.gameState.currentPlayerIndex]
   }
 
-  executeTrade(action: TradeAction): { success: boolean; message: string } {
+  /**
+   * Generate cards for all players for the current round
+   */
+  private generateCardsForRound(): void {
+    const playerCards = this.cardManager.generateCardsForRound(
+      this.gameState.players,
+      this.gameState.stocks,
+      this.gameState.currentRound
+    )
+
+    // Assign cards to each player
+    this.gameState.players.forEach((player) => {
+      player.cards = playerCards[player.id] || []
+    })
+  }
+
+  /**
+   * Show the current card for the current player
+   */
+  private showCurrentCard(): void {
+    const currentPlayer = this.getCurrentPlayer()
+    const card = this.cardManager.getCurrentCard(currentPlayer)
+
+    if (card) {
+      this.cardManager.markCardAsShown(card)
+      this.gameState.currentCard = card
+
+      // Add to accumulated items
+      if (card.type === 'event') {
+        this.gameState.accumulatedEvents.push(card.data as MarketEvent)
+      } else {
+        this.gameState.accumulatedCorporateActions.push(card.data as CorporateAction)
+      }
+    } else {
+      this.gameState.currentCard = null
+    }
+  }
+
+  executeTrade(action: TradeAction): { success: boolean; message: string; toasts?: Array<{ playerName: string; message: string }> } {
     const currentPlayer = this.getCurrentPlayer()
 
     if (action.type === 'skip') {
@@ -66,6 +107,139 @@ export class GameEngine {
       })
 
       return { success: true, message: 'Turn skipped' }
+    }
+
+    if (action.type === 'play_corporate_action') {
+      if (!action.corporateActionId) {
+        return { success: false, message: 'Corporate action ID required' }
+      }
+      if (!action.symbol) {
+        return { success: false, message: 'Stock symbol required for corporate action' }
+      }
+
+      const corporateAction = this.cardManager.playCorporateAction(
+        currentPlayer,
+        action.corporateActionId
+      )
+
+      if (!corporateAction) {
+        return { success: false, message: 'Corporate action not found or already played' }
+      }
+
+      // Set the symbol on the corporate action (player selected it)
+      corporateAction.symbol = action.symbol
+
+      const stock = this.market.getStock(action.symbol)
+      if (!stock) {
+        return { success: false, message: 'Stock not found' }
+      }
+
+      // Process the corporate action based on type
+      let result: { success: boolean; message: string } = { success: false, message: '' }
+
+      if (corporateAction.type === 'right_issue') {
+        // For right issues, we need quantity from the action
+        if (!action.quantity) {
+          return { success: false, message: 'Quantity required for right issue' }
+        }
+        result = this.corporateActionManager.acceptRightIssue(
+          corporateAction,
+          currentPlayer,
+          stock,
+          action.quantity
+        )
+      } else if (corporateAction.type === 'dividend') {
+        // Pay dividend to ALL players who own the stock
+        const toasts: Array<{ playerName: string; message: string }> = []
+        let totalPaid = 0
+
+        this.gameState.players.forEach((player) => {
+          const divResult = this.corporateActionManager.processDividend(
+            corporateAction,
+            player,
+            stock
+          )
+          if (divResult.amount > 0) {
+            toasts.push({
+              playerName: player.name,
+              message: `Received ${stock.name} dividend: $${divResult.amount.toFixed(2)}`
+            })
+            totalPaid += divResult.amount
+
+            // Log dividend received action for this player
+            player.actionHistory.push({
+              round: this.gameState.currentRound,
+              turn: this.gameState.currentTurnInRound,
+              action: {
+                type: 'dividend_received',
+                symbol: stock.symbol,
+                quantity: player.portfolio.find(h => h.symbol === stock.symbol)?.quantity || 0
+              },
+              result: `Received dividend: $${divResult.amount.toFixed(2)}`,
+              timestamp: Date.now(),
+            })
+          }
+        })
+
+        result = {
+          success: true,
+          message: `Dividend declared for ${stock.name}. Paid to ${toasts.length} shareholders.`,
+          toasts
+        }
+      } else if (corporateAction.type === 'bonus_issue') {
+        // Issue bonus shares to ALL players who own the stock
+        const toasts: Array<{ playerName: string; message: string }> = []
+        let totalBonusShares = 0
+
+        this.gameState.players.forEach((player) => {
+          const bonusResult = this.corporateActionManager.processBonusIssue(
+            corporateAction,
+            player,
+            stock
+          )
+          if (bonusResult.bonusShares > 0) {
+            toasts.push({
+              playerName: player.name,
+              message: `Received ${bonusResult.bonusShares} bonus ${stock.name} shares`
+            })
+            totalBonusShares += bonusResult.bonusShares
+
+            // Log bonus shares received action for this player
+            player.actionHistory.push({
+              round: this.gameState.currentRound,
+              turn: this.gameState.currentTurnInRound,
+              action: {
+                type: 'bonus_received',
+                symbol: stock.symbol,
+                quantity: bonusResult.bonusShares
+              },
+              result: `Received ${bonusResult.bonusShares} bonus shares`,
+              timestamp: Date.now(),
+            })
+          }
+        })
+
+        result = {
+          success: true,
+          message: `Bonus issue declared for ${stock.name}. Issued to ${toasts.length} shareholders.`,
+          toasts
+        }
+      }
+
+      // Record action
+      currentPlayer.actionHistory.push({
+        round: this.gameState.currentRound,
+        turn: this.gameState.currentTurnInRound,
+        action: {
+          type: 'play_corporate_action',
+          symbol: corporateAction.symbol,
+          corporateActionId: action.corporateActionId,
+        },
+        result: result.message,
+        timestamp: Date.now(),
+      })
+
+      return result
     }
 
     if (!action.symbol || !action.quantity) {
@@ -137,127 +311,74 @@ export class GameEngine {
   }
 
   endTurn(): {
-    newEvents: MarketEvent[]
-    newCorporateAction: CorporateAction | null
     roundEnded: boolean
     gameOver: boolean
   } {
+    const currentPlayer = this.getCurrentPlayer()
+
     console.log(
-      `[EndTurn] Starting - Round: ${this.gameState.currentRound}, Turn: ${this.gameState.currentTurnInRound}, Player: ${this.gameState.currentPlayerIndex}`
+      `[EndTurn] Player ${currentPlayer.name} completed turn ${this.gameState.currentTurnInRound} of round ${this.gameState.currentRound}`
     )
 
     // Move to next player
     this.gameState.currentPlayerIndex++
 
-    // Generate and apply corporate action for the new player's turn
-    let newCorporateAction: CorporateAction | null = null
-    if (Math.random() < 0.3) {
-      // 30% chance
-      newCorporateAction = this.corporateActionManager.generateCorporateAction(
-        this.gameState.stocks,
-        this.gameState.currentRound,
-        this.gameState.currentTurnInRound
-      )
-
-      if (newCorporateAction) {
-        // Instantly apply dividends and bonus issues to all players
-        if (newCorporateAction.type === 'dividend' || newCorporateAction.type === 'bonus_issue') {
-          this.gameState.players.forEach((player) => {
-            const stock = this.market.getStock(newCorporateAction!.symbol)
-            if (stock) {
-              if (newCorporateAction!.type === 'dividend') {
-                this.corporateActionManager.processDividend(newCorporateAction!, player, stock)
-              } else if (newCorporateAction!.type === 'bonus_issue') {
-                this.corporateActionManager.processBonusIssue(newCorporateAction!, player, stock)
-              }
-            }
-          })
-          // Mark as processed by all players
-          newCorporateAction.playersProcessed = this.gameState.players.map((p) => p.id)
-        }
-
-        this.gameState.pendingCorporateActions.push(newCorporateAction)
-      }
-    }
-
-    // Generate events for the next player's turn (before they start)
-    let newEvents: MarketEvent[] = []
-
-    // If all players have played this turn
+    // If all players have completed this turn cycle
     if (this.gameState.currentPlayerIndex >= this.gameState.players.length) {
-      console.log(`[EndTurn] All players finished turn ${this.gameState.currentTurnInRound}`)
       this.gameState.currentPlayerIndex = 0
       this.gameState.currentTurnInRound++
-      console.log(`[EndTurn] Incremented to turn ${this.gameState.currentTurnInRound}`)
 
-      // If all turns in round are complete
-      if (this.gameState.currentTurnInRound > this.gameState.turnsPerRound) {
-        console.log(
-          `[EndTurn] Round ${this.gameState.currentRound} complete! Processing round end...`
-        )
-        this.gameState.currentTurnInRound = 1
+      console.log(`[EndTurn] All players completed a turn. Now at turn ${this.gameState.currentTurnInRound}`)
+
+      // Check if the round has completed (based on turnsPerRound, not cards)
+      const allPlayersFinished = this.gameState.currentTurnInRound > this.gameState.turnsPerRound
+
+      if (allPlayersFinished) {
+        console.log(`[EndTurn] Round ${this.gameState.currentRound} complete! Processing round end...`)
 
         // Process round end
-        const { gameOver, newEventsForNextRound } = this.processEndOfRound()
+        const { gameOver } = this.processEndOfRound()
 
-        console.log(
-          `[EndTurn] After processEndOfRound - Now at Round: ${this.gameState.currentRound}, Turn: ${this.gameState.currentTurnInRound}`
-        )
         return {
-          newEvents: newEventsForNextRound,
-          newCorporateAction: null,
           roundEnded: true,
           gameOver,
         }
       }
-
-      // Generate events for the next turn (same round, next player)
-      newEvents = this.generateEventsForTurn()
     }
 
-    // If moving to next player within same turn cycle, generate events
-    if (newEvents.length === 0) {
-      newEvents = this.generateEventsForTurn()
-    }
+    // Show card for next player
+    this.showCurrentCard()
 
-    // Clean up expired actions after each turn
-    this.cleanupExpiredCorporateActions()
-
-    return { newEvents, newCorporateAction, roundEnded: false, gameOver: false }
+    return { roundEnded: false, gameOver: false }
   }
 
   /**
-   * Process end of round: apply accumulated events, update history, increment round
+   * Process end of round: apply accumulated events and corporate actions
    */
-  private processEndOfRound(): { gameOver: boolean; newEventsForNextRound: MarketEvent[] } {
+  private processEndOfRound(): { gameOver: boolean } {
     console.log(`[ProcessEndOfRound] Starting for round ${this.gameState.currentRound}`)
-    // Apply all accumulated events from this round
-    const roundEvents = this.gameState.roundEvents[this.gameState.currentRound] || []
 
-    if (roundEvents.length > 0) {
-      // Store prices before applying all events
-      const preRoundPrices: { [symbol: string]: number } = {}
-      this.gameState.stocks.forEach((stock) => {
-        preRoundPrices[stock.symbol] = stock.price
-      })
+    // Store prices before applying all events
+    const preRoundPrices: { [symbol: string]: number } = {}
+    this.gameState.stocks.forEach((stock) => {
+      preRoundPrices[stock.symbol] = stock.price
+    })
 
-      // Apply all events at once
-      this.market.applyAccumulatedEvents(roundEvents)
+    // Apply all accumulated events at once
+    if (this.gameState.accumulatedEvents.length > 0) {
+      this.market.applyAccumulatedEvents(this.gameState.accumulatedEvents)
 
-      // Calculate priceDiff and actualImpact for each event based on its impact
-      roundEvents.forEach((event) => {
+      // Calculate priceDiff and actualImpact for each event
+      this.gameState.accumulatedEvents.forEach((event) => {
         const priceDiff: { [symbol: string]: number } = {}
         const actualImpact: { [symbol: string]: number } = {}
 
         this.gameState.stocks.forEach((stock) => {
           if (event.affectedSectors.includes(stock.sector)) {
-            // For affected stocks, priceDiff is the event's impact
             priceDiff[stock.symbol] = event.impact
-            // Calculate percentage change
             const percentChange = (event.impact / preRoundPrices[stock.symbol]) * 100
             actualImpact[stock.symbol] = Math.round(percentChange * 100) / 100
           } else {
-            // For unaffected stocks, no change from this event
             priceDiff[stock.symbol] = 0
             actualImpact[stock.symbol] = 0
           }
@@ -267,13 +388,31 @@ export class GameEngine {
         event.actualImpact = actualImpact
       })
 
-      // Add all round events to event history after they've been applied
-      roundEvents.forEach((event) => {
-        this.gameState.eventHistory.push(event)
-      })
+      // Add all events to event history
+      this.gameState.eventHistory.push(...this.gameState.accumulatedEvents)
     }
 
-    // Update price history for all stocks after round ends
+    // Process auto-apply corporate actions (dividends and bonus issues that weren't played)
+    this.gameState.accumulatedCorporateActions.forEach((action) => {
+      // Skip if already played
+      if (action.played) return
+
+      const stock = this.market.getStock(action.symbol)
+      if (!stock) return
+
+      // Auto-apply dividends and bonus issues to all eligible players
+      if (action.type === 'dividend' || action.type === 'bonus_issue') {
+        this.gameState.players.forEach((player) => {
+          if (action.type === 'dividend') {
+            this.corporateActionManager.processDividend(action, player, stock)
+          } else if (action.type === 'bonus_issue') {
+            this.corporateActionManager.processBonusIssue(action, player, stock)
+          }
+        })
+      }
+    })
+
+    // Update price history for all stocks
     this.gameState.stocks.forEach((stock) => {
       stock.priceHistory.push({
         round: this.gameState.currentRound,
@@ -281,80 +420,45 @@ export class GameEngine {
       })
     })
 
-    // Clear recent events after they've been applied
-    this.gameState.recentEvents = []
+    // Clear accumulated items and current card
+    this.gameState.accumulatedEvents = []
+    this.gameState.accumulatedCorporateActions = []
+    this.gameState.currentCard = null
 
     console.log(
       `[ProcessEndOfRound] Incrementing round from ${this.gameState.currentRound} to ${this.gameState.currentRound + 1}`
     )
     this.gameState.currentRound++
-
-    // Clean up expired corporate actions at round end
-    this.cleanupExpiredCorporateActions()
+    this.gameState.currentTurnInRound = 1
 
     this.gameState.stocks = this.market.getStocks()
 
     // Check if game is over
     const gameOver = this.gameState.currentRound > this.gameState.maxRounds
 
-    // Generate events for the next round's first turn (if game not over)
-    let newEventsForNextRound: MarketEvent[] = []
+    // Generate cards for next round (if game not over)
     if (!gameOver) {
-      newEventsForNextRound = this.generateEventsForTurn()
+      this.generateCardsForRound()
+      this.showCurrentCard()
     }
 
-    return { gameOver, newEventsForNextRound }
+    return { gameOver }
   }
 
   /**
-   * Generate events BEFORE the current player's turn starts
-   * Events are stored but NOT applied to prices yet
+   * Get unplayed corporate action cards for the current player
    */
-  private generateEventsForTurn(): MarketEvent[] {
-    // Generate 3 events for this turn
-    const newEvents = this.eventSystem.getMultipleEvents(this.gameState.currentRound, 3)
-
-    // Store events for the round (without applying price changes)
-    newEvents.forEach((event) => {
-      event.turn = this.gameState.currentTurnInRound
-
-      this.gameState.recentEvents.unshift(event)
-      // NOTE: eventHistory is populated at round end, not here
-
-      // Store in round events
-      if (!this.gameState.roundEvents[this.gameState.currentRound]) {
-        this.gameState.roundEvents[this.gameState.currentRound] = []
-      }
-      this.gameState.roundEvents[this.gameState.currentRound].push(event)
-    })
-
-    // Trim recent events
-    if (this.gameState.recentEvents.length > 10) {
-      this.gameState.recentEvents = this.gameState.recentEvents.slice(0, 10)
-    }
-
-    return newEvents
+  getUnplayedCorporateActions(): CorporateAction[] {
+    const currentPlayer = this.getCurrentPlayer()
+    return this.cardManager.getUnplayedCorporateActions(currentPlayer)
   }
 
-  private cleanupExpiredCorporateActions(): void {
-    // Remove corporate actions that:
-    // 1. Have been processed by all players, OR
-    // 2. Round has changed (expired)
-    this.gameState.pendingCorporateActions = this.gameState.pendingCorporateActions.filter(
-      (action) => {
-        // If round changed, action expires
-        if (action.round !== this.gameState.currentRound) {
-          return false
-        }
-
-        // If all players have been processed, remove it
-        if (action.playersProcessed.length >= this.gameState.players.length) {
-          return false
-        }
-
-        return true // Keep the action
-      }
-    )
+  /**
+   * Get all cards for a specific player
+   */
+  getPlayerCards(playerId: string): GameCard[] {
+    const player = this.gameState.players.find((p) => p.id === playerId)
+    return player?.cards || []
   }
 
   getPlayerRankings(): Array<{
@@ -386,66 +490,4 @@ export class GameEngine {
     }
   }
 
-  acceptRightIssue(symbol: string, quantity: number): { success: boolean; message: string } {
-    const action = this.gameState.pendingCorporateActions.find(
-      (a) => a.type === 'right_issue' && a.symbol === symbol
-    )
-
-    if (!action) {
-      return { success: false, message: 'No active right issue for this stock' }
-    }
-
-    const currentPlayer = this.getCurrentPlayer()
-    const stock = this.market.getStock(symbol)
-
-    if (!stock) {
-      return { success: false, message: 'Stock not found' }
-    }
-
-    return this.corporateActionManager.acceptRightIssue(action, currentPlayer, stock, quantity)
-  }
-
-  getRightIssueDetails(symbol: string) {
-    const action = this.gameState.pendingCorporateActions.find(
-      (a) => a.type === 'right_issue' && a.symbol === symbol
-    )
-
-    if (!action) return null
-
-    const currentPlayer = this.getCurrentPlayer()
-    const stock = this.market.getStock(symbol)
-
-    if (!stock) return null
-
-    return this.corporateActionManager.processRightIssue(action, currentPlayer, stock)
-  }
-
-  getPendingCorporateActions(): CorporateAction[] {
-    return this.gameState.pendingCorporateActions
-  }
-
-  getRoundPriceDiff(round: number): { [symbol: string]: number } {
-    const events = this.gameState.roundEvents[round] || []
-    const totalPriceDiff: { [symbol: string]: number } = {}
-
-    // Initialize all stocks with 0
-    this.gameState.stocks.forEach((stock) => {
-      totalPriceDiff[stock.symbol] = 0
-    })
-
-    // Sum up all price diffs from events in this round
-    events.forEach((event) => {
-      if (event.priceDiff) {
-        Object.entries(event.priceDiff).forEach(([symbol, diff]) => {
-          totalPriceDiff[symbol] = Math.round((totalPriceDiff[symbol] + diff) * 100) / 100
-        })
-      }
-    })
-
-    return totalPriceDiff
-  }
-
-  getRoundEvents(round: number): MarketEvent[] {
-    return this.gameState.roundEvents[round] || []
-  }
 }
