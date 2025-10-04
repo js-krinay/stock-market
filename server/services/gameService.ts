@@ -52,7 +52,6 @@ export class GameService {
           name,
           gameId: game.id,
           cash: STARTING_CASH,
-          currentTurnIndex: 0,
         },
       })
     }
@@ -106,12 +105,8 @@ export class GameService {
             actionHistory: {
               orderBy: { timestamp: 'desc' },
             },
-            cards: {
-              include: {
-                event: true,
-                corporateAction: true,
-              },
-            },
+            events: true,
+            corporateActions: true,
           },
         },
         stocks: {
@@ -216,15 +211,6 @@ export class GameService {
     })
 
     if (!game) throw new Error('Game not found')
-
-    // Get current player
-    const currentPlayer = game.players[game.currentPlayerIndex]
-
-    // Increment current player's turn index
-    await this.prisma.player.update({
-      where: { id: currentPlayer.id },
-      data: { currentTurnIndex: currentPlayer.currentTurnIndex + 1 },
-    })
 
     // Move to next player
     const nextPlayerIndex = (game.currentPlayerIndex + 1) % game.players.length

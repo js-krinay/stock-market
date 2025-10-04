@@ -180,7 +180,6 @@ export class CorporateActionManager {
             dividendPercentage: DIVIDEND_PERCENTAGE,
           } as DividendDetails,
           round: currentRound,
-          createdAtTurn: currentTurn,
           playersProcessed: [],
         }
       }
@@ -200,7 +199,6 @@ export class CorporateActionManager {
             discountPercentage: RIGHT_ISSUE_DISCOUNT,
           } as RightIssueDetails,
           round: currentRound,
-          createdAtTurn: currentTurn,
           playersProcessed: [],
         }
       }
@@ -218,7 +216,6 @@ export class CorporateActionManager {
             baseShares: 5,
           } as BonusIssueDetails,
           round: currentRound,
-          createdAtTurn: currentTurn,
           playersProcessed: [],
         }
     }

@@ -89,8 +89,8 @@ export const gameRouter = router({
               averageCost: h.averageCost,
             })),
             actionHistory: [],
-            cards: [],
-            currentTurnIndex: player.currentTurnIndex,
+            events: [],
+            corporateActions: [],
           },
           totalValue: player.cash + portfolioValue,
         }
@@ -122,7 +122,7 @@ export const gameRouter = router({
         include: {
           players: {
             include: {
-              cards: true,
+              corporateActions: true,
             },
           },
         },
@@ -131,30 +131,20 @@ export const gameRouter = router({
       if (!game) throw new Error('Game not found')
 
       const currentPlayer = game.players[game.currentPlayerIndex]
-      const unplayedActions = []
-
-      for (const card of currentPlayer.cards) {
-        if (card.type === 'corporate_action') {
-          const action = await ctx.prisma.corporateAction.findUnique({
-            where: { id: card.dataId },
-          })
-          if (action && !action.played) {
-            unplayedActions.push({
-              id: action.actionId,
-              type: action.type,
-              symbol: action.symbol,
-              title: action.title,
-              description: action.description,
-              details: JSON.parse(action.details),
-              round: action.round,
-              createdAtTurn: action.createdAtTurn,
-              playersProcessed: JSON.parse(action.playersProcessed),
-              playerId: action.playerId,
-              played: action.played,
-            })
-          }
-        }
-      }
+      const unplayedActions = currentPlayer.corporateActions
+        .filter((action) => !action.played)
+        .map((action) => ({
+          id: action.actionId,
+          type: action.type,
+          symbol: action.symbol,
+          title: action.title,
+          description: action.description,
+          details: JSON.parse(action.details),
+          round: action.round,
+          playersProcessed: JSON.parse(action.playersProcessed),
+          playerId: action.playerId,
+          played: action.played,
+        }))
 
       return unplayedActions
     }),

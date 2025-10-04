@@ -49,12 +49,6 @@ export class RoundProcessor {
     })
 
     if (!gameOver) {
-      // Reset all player turn indices
-      await this.prisma.player.updateMany({
-        where: { gameId },
-        data: { currentTurnIndex: 0 },
-      })
-
       // Generate cards for next round
       await onCardsGenerated(gameId)
     }
@@ -73,13 +67,12 @@ export class RoundProcessor {
 
       if (!game) throw new Error('Game not found')
 
-      // Step 2: Load all event cards for the current round
-      const eventCards = await tx.gameCard.findMany({
-        where: { gameId, round: currentRound, type: 'event' },
-        include: { event: true },
+      // Step 2: Load all events for the current round
+      const events = await tx.marketEvent.findMany({
+        where: { gameId, round: currentRound },
       })
 
-      if (eventCards.length === 0) return
+      if (events.length === 0) return
 
       // Step 3: Store pre-round prices for calculating percentage impacts
       const preRoundPrices: { [symbol: string]: number } = {}
@@ -91,13 +84,11 @@ export class RoundProcessor {
       const stockEvents: any[] = []
       let netCashImpact = 0
 
-      for (const card of eventCards) {
-        if (!card.event) continue
-
-        if (card.event.type === 'inflation' || card.event.type === 'deflation') {
-          netCashImpact += card.event.impact
+      for (const event of events) {
+        if (event.type === 'inflation' || event.type === 'deflation') {
+          netCashImpact += event.impact
         } else {
-          stockEvents.push(card.event)
+          stockEvents.push(event)
         }
       }
 

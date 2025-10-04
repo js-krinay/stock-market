@@ -81,19 +81,26 @@ describe('GameService Integration Tests', () => {
     it('should generate 10 cards per player for round 1', async () => {
       const gameId = await gameService.createGame(['Alice', 'Bob'], 10)
 
-      const cards = await prisma.gameCard.findMany({
+      const events = await prisma.marketEvent.findMany({
+        where: { gameId },
+      })
+      const actions = await prisma.corporateAction.findMany({
         where: { gameId },
       })
 
-      expect(cards).toHaveLength(20) // 10 cards × 2 players
+      expect(events.length + actions.length).toBe(20) // 10 cards × 2 players
     })
 
     it('should have cards assigned to first player', async () => {
       const gameId = await gameService.createGame(['Alice'], 10)
       const gameState = await gameService.getGameState(gameId)
 
-      expect(gameState.players[0].cards).toHaveLength(10)
-      expect(gameState.players[0].cards[0].round).toBe(1)
+      const totalCards =
+        gameState.players[0].events.length + gameState.players[0].corporateActions.length
+      expect(totalCards).toBe(10)
+
+      const firstCard = gameState.players[0].events[0] || gameState.players[0].corporateActions[0]
+      expect(firstCard.round).toBe(1)
     })
   })
 
@@ -238,24 +245,6 @@ describe('GameService Integration Tests', () => {
       expect(state.currentPlayerIndex).toBe(0)
       expect(state.currentTurnInRound).toBe(2) // Second turn of round
     })
-
-    it('should increment player turn index', async () => {
-      const gameId = await gameService.createGame(['Alice'], 10)
-      const initialState = await gameService.getGameState(gameId)
-      const playerId = initialState.players[0].id
-
-      const initialPlayer = await prisma.player.findUnique({
-        where: { id: playerId },
-      })
-      expect(initialPlayer?.currentTurnIndex).toBe(0)
-
-      await gameService.endTurn(gameId)
-
-      const updatedPlayer = await prisma.player.findUnique({
-        where: { id: playerId },
-      })
-      expect(updatedPlayer?.currentTurnIndex).toBe(1)
-    })
   })
 
   describe('Round End Processing', () => {
@@ -318,21 +307,6 @@ describe('GameService Integration Tests', () => {
       expect(priceHistory.length).toBeGreaterThan(0)
     })
 
-    it('should reset player turn indices at round end', async () => {
-      const gameId = await gameService.createGame(['Alice'], 10)
-
-      // Complete round
-      await gameService.endTurn(gameId)
-      await gameService.endTurn(gameId)
-      await gameService.endTurn(gameId)
-
-      const player = await prisma.player.findFirst({
-        where: { gameId },
-      })
-
-      expect(player?.currentTurnIndex).toBe(0)
-    })
-
     it('should generate new cards for next round', async () => {
       const gameId = await gameService.createGame(['Alice'], 10)
 
@@ -341,11 +315,14 @@ describe('GameService Integration Tests', () => {
       await gameService.endTurn(gameId)
       await gameService.endTurn(gameId)
 
-      const round2Cards = await prisma.gameCard.findMany({
+      const round2Events = await prisma.marketEvent.findMany({
+        where: { gameId, round: 2 },
+      })
+      const round2Actions = await prisma.corporateAction.findMany({
         where: { gameId, round: 2 },
       })
 
-      expect(round2Cards).toHaveLength(10) // 10 cards for 1 player
+      expect(round2Events.length + round2Actions.length).toBe(10) // 10 cards for 1 player
     })
   })
 
@@ -379,8 +356,8 @@ describe('GameService Integration Tests', () => {
           description: 'Test',
           details: JSON.stringify({ amountPerShare: 5 }),
           round: 1,
-          createdAtTurn: 0,
           playersProcessed: JSON.stringify([]),
+          playerId: gameState.players[1].id, // Bob's card
           played: false,
           gameId,
         },
@@ -420,6 +397,7 @@ describe('GameService Integration Tests', () => {
       })
 
       // Create right issue (1:2 ratio - 1 new share per 2 held)
+      const gameState = await gameService.getGameState(gameId)
       const corporateAction = await prisma.corporateAction.create({
         data: {
           actionId: 'test-right',
@@ -428,8 +406,8 @@ describe('GameService Integration Tests', () => {
           description: 'Test',
           details: JSON.stringify({ ratio: 1, baseShares: 2, discountPercentage: 0.5 }),
           round: 1,
-          createdAtTurn: 0,
           playersProcessed: JSON.stringify([]),
+          playerId: gameState.players[0].id,
           played: false,
           gameId,
         },
@@ -466,6 +444,7 @@ describe('GameService Integration Tests', () => {
       })
 
       // Create bonus issue (1:5 ratio - 1 bonus per 5 held)
+      const gameState = await gameService.getGameState(gameId)
       const corporateAction = await prisma.corporateAction.create({
         data: {
           actionId: 'test-bonus',
@@ -474,8 +453,8 @@ describe('GameService Integration Tests', () => {
           description: 'Test',
           details: JSON.stringify({ ratio: 1, baseShares: 5 }),
           round: 1,
-          createdAtTurn: 0,
           playersProcessed: JSON.stringify([]),
+          playerId: gameState.players[0].id,
           played: false,
           gameId,
         },

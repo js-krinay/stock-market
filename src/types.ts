@@ -15,10 +15,8 @@ export type Stock = GameState['stocks'][number]
 export type MarketEvent = GameState['eventHistory'][number]
 export type StockHolding = Player['portfolio'][number]
 export type TurnAction = Player['actionHistory'][number]
-export type GameCard = Player['cards'][number]
-export type CorporateAction = NonNullable<GameCard['data']> & {
-  type: 'dividend' | 'right_issue' | 'bonus_issue'
-}
+export type CorporateAction = Player['corporateActions'][number]
+export type GameCard = Player['events'][number] | Player['corporateActions'][number]
 
 // Re-export corporate action detail types from server
 export type { DividendDetails, RightIssueDetails, BonusIssueDetails } from '../server/types'

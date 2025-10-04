@@ -82,7 +82,7 @@ export function AllPlayersTable({ gameState, currentPlayer }: AllPlayersTablePro
       {selectedPlayer && (
         <PlayerCardsDialog
           playerName={selectedPlayer.name}
-          cards={selectedPlayer.cards}
+          cards={[...selectedPlayer.events, ...selectedPlayer.corporateActions]}
           isOpen={!!selectedPlayer}
           onClose={() => setSelectedPlayer(null)}
         />

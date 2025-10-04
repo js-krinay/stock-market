@@ -1,5 +1,4 @@
 import { PrismaClient } from '@prisma/client'
-import { nanoid } from 'nanoid'
 import { EventSystem } from '../utils/events'
 import { CorporateActionManager } from '../utils/corporateActions'
 import { CARDS_PER_PLAYER, CORPORATE_ACTION_PERCENTAGE } from '../constants'
@@ -42,13 +41,13 @@ export class CardManager {
       }
 
       // Generate cards based on shuffled types
-      for (let turnIndex = 0; turnIndex < CARDS_PER_PLAYER; turnIndex++) {
-        const cardType = cardTypes[turnIndex]
+      for (let i = 0; i < CARDS_PER_PLAYER; i++) {
+        const cardType = cardTypes[i]
 
         if (cardType === 'event') {
           // Generate event card
           const event = this.eventSystem.getRandomEvent(game.currentRound)
-          const createdEvent = await this.prisma.marketEvent.create({
+          await this.prisma.marketEvent.create({
             data: {
               eventId: event.id,
               type: event.type,
@@ -62,28 +61,14 @@ export class CardManager {
               gameId,
             },
           })
-
-          await this.prisma.gameCard.create({
-            data: {
-              cardId: nanoid(),
-              type: 'event',
-              dataType: 'MarketEvent',
-              dataId: createdEvent.id,
-              eventId: createdEvent.id,
-              playerId: player.id,
-              round: game.currentRound,
-              turnIndex,
-              gameId,
-            },
-          })
         } else {
           // Generate corporate action card (always returns a valid action now)
           const corporateAction = this.corporateActionManager.generateCorporateAction(
             game.currentRound,
-            turnIndex
+            i
           )
 
-          const createdAction = await this.prisma.corporateAction.create({
+          await this.prisma.corporateAction.create({
             data: {
               actionId: corporateAction.id,
               type: corporateAction.type,
@@ -91,24 +76,9 @@ export class CardManager {
               description: corporateAction.description,
               details: JSON.stringify(corporateAction.details),
               round: game.currentRound,
-              createdAtTurn: turnIndex,
               playersProcessed: JSON.stringify([]),
               playerId: player.id,
               played: false,
-              gameId,
-            },
-          })
-
-          await this.prisma.gameCard.create({
-            data: {
-              cardId: nanoid(),
-              type: 'corporate_action',
-              dataType: 'CorporateAction',
-              dataId: createdAction.id,
-              corporateActionId: createdAction.id,
-              playerId: player.id,
-              round: game.currentRound,
-              turnIndex,
               gameId,
             },
           })

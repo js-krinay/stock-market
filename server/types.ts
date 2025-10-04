@@ -22,8 +22,8 @@ export interface Player {
   cash: number
   portfolio: StockHolding[]
   actionHistory: TurnAction[]
-  cards: GameCard[] // Cards assigned to this player for the current round
-  currentTurnIndex: number // Which turn (0-9) the player is on in the current round
+  events: MarketEvent[] // Event cards assigned to this player for the current round
+  corporateActions: CorporateAction[] // Corporate action cards assigned to this player for the current round
 }
 
 export interface TurnAction {
@@ -46,9 +46,10 @@ export interface MarketEvent {
   impact: number // For stock events: fixed dollar price change; For inflation/deflation: percentage change (e.g., 10 = 10%)
   round: number
   turn?: number // Which turn within the round this event occurred
+  playerId?: string // Which player received this event card (optional for templates, required in DB)
+  excludedBy?: string | null // Player ID who excluded this card (director/chairman)
   priceDiff?: { [symbol: string]: number } // Absolute price change (in dollars) for each stock
   actualImpact?: { [symbol: string]: number } // Percentage price changes applied
-  playerId?: string // Which player received this event card
 }
 
 export interface CorporateAction {
@@ -59,9 +60,9 @@ export interface CorporateAction {
   description: string
   details: DividendDetails | RightIssueDetails | BonusIssueDetails
   round: number // Round when the action was created
-  createdAtTurn: number // Turn number when action was created
   playersProcessed: string[] // Track which players have been processed for this action
-  playerId?: string // Which player received this corporate action card
+  playerId?: string // Which player received this corporate action card (optional for templates, required in DB)
+  excludedBy?: string | null // Player ID who excluded this card (director/chairman)
   played?: boolean // Whether the card has been played
   // Rights issue expiry tracking
   status?: 'pending' | 'active' | 'expired'
@@ -70,14 +71,9 @@ export interface CorporateAction {
 }
 
 // Card that can be either an event or corporate action
-export interface GameCard {
-  id: string
-  type: 'event' | 'corporate_action'
-  data: MarketEvent | CorporateAction
-  playerId: string
-  round: number
-  turnIndex: number // Which turn (0-9) this card is for
-}
+export type GameCard =
+  | (MarketEvent & { cardType: 'event' })
+  | (CorporateAction & { cardType: 'corporate_action' })
 
 export interface DividendDetails {
   dividendPercentage: number // Dividend percentage (e.g., 0.05 = 5% of stock price)

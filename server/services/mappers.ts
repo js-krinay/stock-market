@@ -48,29 +48,14 @@ export function mapDbPlayerToAppPlayer(player: any, currentRound?: number): Play
       result: ah.result,
       timestamp: ah.timestamp.getTime(),
     })),
-    cards:
-      player.cards
-        ?.filter((card: any) => !currentRound || card.round === currentRound)
-        .map((card: any) => {
-          // Determine the data based on card type
-          let data: MarketEvent | CorporateAction | undefined
-
-          if (card.type === 'event' && card.event) {
-            data = mapDbEventToAppEvent(card.event)
-          } else if (card.type === 'corporate_action' && card.corporateAction) {
-            data = mapDbActionToAppAction(card.corporateAction)
-          }
-
-          return {
-            id: card.cardId,
-            type: card.type,
-            data,
-            playerId: card.playerId,
-            round: card.round,
-            turnIndex: card.turnIndex,
-          }
-        }) || [],
-    currentTurnIndex: player.currentTurnIndex,
+    events:
+      player.events
+        ?.filter((event: any) => !currentRound || event.round === currentRound)
+        .map((event: any) => mapDbEventToAppEvent(event)) || [],
+    corporateActions:
+      player.corporateActions
+        ?.filter((action: any) => !currentRound || action.round === currentRound)
+        .map((action: any) => mapDbActionToAppAction(action)) || [],
   }
 }
 
@@ -89,6 +74,7 @@ export function mapDbEventToAppEvent(event: any): MarketEvent {
     round: event.round,
     turn: event.turn,
     playerId: event.playerId,
+    excludedBy: event.excludedBy,
     priceDiff: event.priceDiff ? JSON.parse(event.priceDiff) : undefined,
     actualImpact: event.actualImpact ? JSON.parse(event.actualImpact) : undefined,
   }
@@ -106,9 +92,9 @@ export function mapDbActionToAppAction(action: any): CorporateAction {
     description: action.description,
     details: JSON.parse(action.details),
     round: action.round,
-    createdAtTurn: action.createdAtTurn,
     playersProcessed: JSON.parse(action.playersProcessed),
     playerId: action.playerId,
+    excludedBy: action.excludedBy,
     played: action.played,
     status: action.status,
     expiresAtPlayerId: action.expiresAtPlayerId,

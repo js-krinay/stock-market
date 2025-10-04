@@ -66,13 +66,7 @@ export function TradePanel({
 
   // Get unplayed corporate actions for the current player
   const getCorporateActions = (): CorporateAction[] => {
-    return currentPlayer.cards
-      .filter((card) => {
-        if (card.type !== 'corporate_action' || !card.data) return false
-        const action = card.data as CorporateAction
-        return !action.played
-      })
-      .map((card) => card.data as CorporateAction)
+    return currentPlayer.corporateActions.filter((action) => !action.played)
   }
 
   const corporateActions = getCorporateActions()

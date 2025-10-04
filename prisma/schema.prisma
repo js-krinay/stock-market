@@ -19,12 +19,12 @@ model Game {
   turnsPerRound       Int      @default(3)
   currentPlayerIndex  Int      @default(0)
   isComplete          Boolean  @default(false)
+  excludedCardId      String?  // Only one card can be excluded per round (null = none excluded)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
   players                     Player[]
   stocks                      Stock[]
-  cards                       GameCard[]
   events                      MarketEvent[]
   corporateActions            CorporateAction[]
 }
@@ -34,13 +34,13 @@ model Player {
   id                 String @id @default(cuid())
   name               String
   cash               Float  @default(10000)
-  currentTurnIndex   Int    @default(0)
   gameId             String
   game               Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
 
   portfolio          StockHolding[]
   actionHistory      TurnAction[]
-  cards              GameCard[]
+  events             MarketEvent[]
+  corporateActions   CorporateAction[]
   stocksAsDirector   Stock[]       @relation("StockDirector")
   stocksAsChairman   Stock[]       @relation("StockChairman")
 
@@ -131,14 +131,16 @@ model MarketEvent {
   impact           Float
   round            Int
   turn             Int?
-  playerId         String?
+  playerId         String
+  player           Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  excludedBy       String? // Player ID who excluded this card (director/chairman), null if not excluded
   priceDiff        String? // JSON object { [symbol: string]: number }
   actualImpact     String? // JSON object { [symbol: string]: number }
   gameId           String
   game             Game    @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  cards            GameCard[]
 
   @@index([gameId])
+  @@index([playerId])
 }
 
 // Corporate action
@@ -151,9 +153,10 @@ model CorporateAction {
   description         String
   details             String // JSON for DividendDetails | RightIssueDetails | BonusIssueDetails
   round               Int
-  createdAtTurn       Int
   playersProcessed    String // JSON array of player IDs
-  playerId            String?
+  playerId            String
+  player              Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  excludedBy          String? // Player ID who excluded this card (director/chairman), null if not excluded
   played              Boolean  @default(false)
   // Rights issue expiry tracking
   status              String?  @default("pending") // 'pending' | 'active' | 'expired'
@@ -161,32 +164,7 @@ model CorporateAction {
   eligiblePlayerIds   String? // JSON array of player IDs who were eligible when card was played
   gameId              String
   game                Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  cards               GameCard[]
 
   @@index([gameId])
-}
-
-// Game card (event or corporate action card)
-model GameCard {
-  id                String  @id @default(cuid())
-  cardId            String // Unique card ID
-  type              String // 'event' | 'corporate_action'
-  dataType          String // For type discrimination ('MarketEvent' | 'CorporateAction')
-  dataId            String // Reference to MarketEvent.id or CorporateAction.id
-  playerId          String
-  player            Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  round             Int
-  turnIndex         Int
-  gameId            String
-  game              Game    @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  eventId           String?
-  event             MarketEvent? @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  corporateActionId String?
-  corporateAction   CorporateAction? @relation(fields: [corporateActionId], references: [id], onDelete: Cascade)
-
   @@index([playerId])
-  @@index([gameId])
-  @@index([eventId])
-  @@index([corporateActionId])
 }
-

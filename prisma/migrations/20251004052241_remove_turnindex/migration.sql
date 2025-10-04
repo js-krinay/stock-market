@@ -7,6 +7,7 @@ CREATE TABLE "Game" (
     "turnsPerRound" INTEGER NOT NULL DEFAULT 3,
     "currentPlayerIndex" INTEGER NOT NULL DEFAULT 0,
     "isComplete" BOOLEAN NOT NULL DEFAULT false,
+    "excludedCardId" TEXT,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL
 );
@@ -16,7 +17,6 @@ CREATE TABLE "Player" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "name" TEXT NOT NULL,
     "cash" REAL NOT NULL DEFAULT 10000,
-    "currentTurnIndex" INTEGER NOT NULL DEFAULT 0,
     "gameId" TEXT NOT NULL,
     CONSTRAINT "Player_gameId_fkey" FOREIGN KEY ("gameId") REFERENCES "Game" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
@@ -88,10 +88,12 @@ CREATE TABLE "MarketEvent" (
     "impact" REAL NOT NULL,
     "round" INTEGER NOT NULL,
     "turn" INTEGER,
-    "playerId" TEXT,
+    "playerId" TEXT NOT NULL,
+    "excludedBy" TEXT,
     "priceDiff" TEXT,
     "actualImpact" TEXT,
     "gameId" TEXT NOT NULL,
+    CONSTRAINT "MarketEvent_playerId_fkey" FOREIGN KEY ("playerId") REFERENCES "Player" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "MarketEvent_gameId_fkey" FOREIGN KEY ("gameId") REFERENCES "Game" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
@@ -105,34 +107,16 @@ CREATE TABLE "CorporateAction" (
     "description" TEXT NOT NULL,
     "details" TEXT NOT NULL,
     "round" INTEGER NOT NULL,
-    "createdAtTurn" INTEGER NOT NULL,
     "playersProcessed" TEXT NOT NULL,
-    "playerId" TEXT,
+    "playerId" TEXT NOT NULL,
+    "excludedBy" TEXT,
     "played" BOOLEAN NOT NULL DEFAULT false,
     "status" TEXT DEFAULT 'pending',
     "expiresAtPlayerId" TEXT,
     "eligiblePlayerIds" TEXT,
     "gameId" TEXT NOT NULL,
+    CONSTRAINT "CorporateAction_playerId_fkey" FOREIGN KEY ("playerId") REFERENCES "Player" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "CorporateAction_gameId_fkey" FOREIGN KEY ("gameId") REFERENCES "Game" ("id") ON DELETE CASCADE ON UPDATE CASCADE
-);
-
--- CreateTable
-CREATE TABLE "GameCard" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "cardId" TEXT NOT NULL,
-    "type" TEXT NOT NULL,
-    "dataType" TEXT NOT NULL,
-    "dataId" TEXT NOT NULL,
-    "playerId" TEXT NOT NULL,
-    "round" INTEGER NOT NULL,
-    "turnIndex" INTEGER NOT NULL,
-    "gameId" TEXT NOT NULL,
-    "eventId" TEXT,
-    "corporateActionId" TEXT,
-    CONSTRAINT "GameCard_playerId_fkey" FOREIGN KEY ("playerId") REFERENCES "Player" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "GameCard_gameId_fkey" FOREIGN KEY ("gameId") REFERENCES "Game" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "GameCard_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "MarketEvent" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "GameCard_corporateActionId_fkey" FOREIGN KEY ("corporateActionId") REFERENCES "CorporateAction" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateIndex
@@ -169,16 +153,10 @@ CREATE INDEX "TurnAction_playerId_idx" ON "TurnAction"("playerId");
 CREATE INDEX "MarketEvent_gameId_idx" ON "MarketEvent"("gameId");
 
 -- CreateIndex
+CREATE INDEX "MarketEvent_playerId_idx" ON "MarketEvent"("playerId");
+
+-- CreateIndex
 CREATE INDEX "CorporateAction_gameId_idx" ON "CorporateAction"("gameId");
 
 -- CreateIndex
-CREATE INDEX "GameCard_playerId_idx" ON "GameCard"("playerId");
-
--- CreateIndex
-CREATE INDEX "GameCard_gameId_idx" ON "GameCard"("gameId");
-
--- CreateIndex
-CREATE INDEX "GameCard_eventId_idx" ON "GameCard"("eventId");
-
--- CreateIndex
-CREATE INDEX "GameCard_corporateActionId_idx" ON "GameCard"("corporateActionId");
+CREATE INDEX "CorporateAction_playerId_idx" ON "CorporateAction"("playerId");
