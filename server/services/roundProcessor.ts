@@ -1,4 +1,9 @@
 import { PrismaClient } from '@prisma/client'
+import {
+  applyMultiplePriceImpacts,
+  applyCashImpact,
+  calculatePriceChangePercentage,
+} from '../utils/pricing'
 
 type TransactionClient = Omit<
   PrismaClient,
@@ -133,26 +138,29 @@ export class RoundProcessor {
     if (events.length === 0) return
 
     // Group events by stock to calculate total impact per stock
-    const stockImpacts: { [stockId: string]: number } = {}
+    const stockImpacts: { [stockId: string]: number[] } = {}
 
     for (const event of events) {
       const affectedStocks = JSON.parse(event.affectedStocks)
 
       for (const stock of game.stocks) {
         if (affectedStocks.includes(stock.symbol)) {
-          stockImpacts[stock.id] = (stockImpacts[stock.id] || 0) + event.impact
+          if (!stockImpacts[stock.id]) {
+            stockImpacts[stock.id] = []
+          }
+          stockImpacts[stock.id].push(event.impact)
         }
       }
     }
 
-    // Apply accumulated impacts to each stock
-    for (const [stockId, totalImpact] of Object.entries(stockImpacts)) {
+    // Apply accumulated impacts to each stock using pure function
+    for (const [stockId, impacts] of Object.entries(stockImpacts)) {
       const stock = game.stocks.find((s: any) => s.id === stockId)
       if (stock) {
-        const newPrice = Math.round(Math.max(0, stock.price + totalImpact) * 100) / 100
+        const priceImpact = applyMultiplePriceImpacts(stock.price, impacts)
         await tx.stock.update({
           where: { id: stockId },
-          data: { price: newPrice },
+          data: { price: priceImpact.newPrice },
         })
       }
     }
@@ -170,8 +178,10 @@ export class RoundProcessor {
       updatedStocks.forEach((stock: any) => {
         if (affectedStocks.includes(stock.symbol)) {
           priceDiff[stock.symbol] = event.impact
-          const percentChange = (event.impact / preRoundPrices[stock.symbol]) * 100
-          actualImpact[stock.symbol] = Math.round(percentChange * 100) / 100
+          actualImpact[stock.symbol] = calculatePriceChangePercentage(
+            preRoundPrices[stock.symbol],
+            stock.price
+          )
         } else {
           priceDiff[stock.symbol] = 0
           actualImpact[stock.symbol] = 0
@@ -205,12 +215,12 @@ export class RoundProcessor {
     })
 
     for (const player of players) {
-      const cashChange = player.cash * (netCashImpact / 100)
-      const newCash = Math.max(0, player.cash + cashChange)
+      const newCash = applyCashImpact(player.cash, netCashImpact)
+      const cashChange = newCash - player.cash
 
       await tx.player.update({
         where: { id: player.id },
-        data: { cash: Math.round(newCash * 100) / 100 },
+        data: { cash: newCash },
       })
 
       // Log the cash change

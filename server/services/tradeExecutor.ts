@@ -1,6 +1,13 @@
 import { PrismaClient } from '@prisma/client'
 import type { TradeAction } from '../types'
 import { mapDbActionToAppAction } from './mappers'
+import {
+  validateBuyTrade,
+  validateSellTrade,
+  calculateBuyPortfolioUpdate,
+  calculateSellPortfolioUpdate,
+  calculateSaleProfit,
+} from '../utils/trading'
 
 export class TradeExecutor {
   constructor(private prisma: PrismaClient) {}
@@ -82,16 +89,18 @@ export class TradeExecutor {
     quantity: number,
     onLeadershipUpdate: () => Promise<void>
   ) {
-    // Check stock availability
-    if (quantity > stock.availableQuantity) {
-      return { success: false, message: `Only ${stock.availableQuantity} shares available` }
+    // Validate trade using pure function
+    const validation = validateBuyTrade(
+      quantity,
+      stock.price,
+      stock.availableQuantity,
+      currentPlayer.cash
+    )
+    if (!validation.isValid) {
+      return { success: false, message: validation.error! }
     }
 
     const totalCost = stock.price * quantity
-
-    if (totalCost > currentPlayer.cash) {
-      return { success: false, message: 'Insufficient funds' }
-    }
 
     // Update stock availability
     await this.prisma.stock.update({
@@ -103,9 +112,13 @@ export class TradeExecutor {
     const existingHolding = currentPlayer.portfolio.find((h: any) => h.symbol === stock.symbol)
 
     if (existingHolding) {
-      const newQuantity = existingHolding.quantity + quantity
-      const newAverageCost =
-        (existingHolding.averageCost * existingHolding.quantity + totalCost) / newQuantity
+      // Use pure function to calculate new portfolio state
+      const { newQuantity, newAverageCost } = calculateBuyPortfolioUpdate(
+        existingHolding.quantity,
+        existingHolding.averageCost,
+        quantity,
+        stock.price
+      )
 
       await this.prisma.stockHolding.update({
         where: { id: existingHolding.id },
@@ -163,16 +176,18 @@ export class TradeExecutor {
     onLeadershipUpdate: () => Promise<void>
   ) {
     const holding = currentPlayer.portfolio.find((h: any) => h.symbol === stock.symbol)
+    const playerHolding = holding?.quantity || 0
 
-    if (!holding) {
-      return { success: false, message: 'You do not own this stock' }
-    }
-
-    if (quantity > holding.quantity) {
-      return { success: false, message: 'Insufficient shares to sell' }
+    // Validate trade using pure function
+    const validation = validateSellTrade(quantity, stock.price, playerHolding)
+    if (!validation.isValid) {
+      return { success: false, message: validation.error! }
     }
 
     const totalRevenue = stock.price * quantity
+
+    // Calculate profit using pure function
+    const profit = calculateSaleProfit(quantity, stock.price, holding.averageCost)
 
     // Update portfolio
     if (quantity === holding.quantity) {
@@ -180,9 +195,16 @@ export class TradeExecutor {
         where: { id: holding.id },
       })
     } else {
+      // Use pure function to calculate new portfolio state
+      const { newQuantity } = calculateSellPortfolioUpdate(
+        holding.quantity,
+        holding.averageCost,
+        quantity
+      )
+
       await this.prisma.stockHolding.update({
         where: { id: holding.id },
-        data: { quantity: holding.quantity - quantity },
+        data: { quantity: newQuantity },
       })
     }
 
@@ -198,7 +220,14 @@ export class TradeExecutor {
       data: { cash: Math.round((currentPlayer.cash + totalRevenue) * 100) / 100 },
     })
 
-    // Log action
+    // Log action with profit/loss
+    const profitText =
+      profit > 0
+        ? `(+$${profit.toFixed(2)} profit)`
+        : profit < 0
+          ? `($${Math.abs(profit).toFixed(2)} loss)`
+          : '(breakeven)'
+
     await this.prisma.turnAction.create({
       data: {
         round: game.currentRound,
@@ -208,7 +237,7 @@ export class TradeExecutor {
         quantity: quantity,
         price: stock.price,
         totalValue: totalRevenue,
-        result: `Sold ${quantity} shares of ${stock.symbol} for $${totalRevenue.toFixed(2)}`,
+        result: `Sold ${quantity} shares of ${stock.symbol} for $${totalRevenue.toFixed(2)} ${profitText}`,
         playerId: currentPlayer.id,
       },
     })
@@ -217,7 +246,7 @@ export class TradeExecutor {
 
     return {
       success: true,
-      message: `Sold ${quantity} shares of ${stock.symbol} for $${totalRevenue.toFixed(2)}`,
+      message: `Sold ${quantity} shares of ${stock.symbol} for $${totalRevenue.toFixed(2)} ${profitText}`,
     }
   }
 
