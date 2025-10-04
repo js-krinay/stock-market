@@ -63,8 +63,6 @@ model Stock {
   director          Player?  @relation("StockDirector", fields: [directorId], references: [id])
   chairmanId        String?
   chairman          Player?  @relation("StockChairman", fields: [chairmanId], references: [id])
-  directorSince     DateTime @default(now())
-  chairmanSince     DateTime @default(now())
 
   holdings      StockHolding[]
   priceHistory  PriceHistory[]

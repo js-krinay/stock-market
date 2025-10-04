@@ -13,8 +13,6 @@ export function mapDbStockToAppStock(stock: any): Stock {
     color: stock.color,
     directorId: stock.directorId,
     chairmanId: stock.chairmanId,
-    directorSince: stock.directorSince?.getTime() || 0,
-    chairmanSince: stock.chairmanSince?.getTime() || 0,
     priceHistory:
       stock.priceHistory?.map((ph: any) => ({
         round: ph.round,

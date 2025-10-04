@@ -33,8 +33,6 @@ CREATE TABLE "Stock" (
     "gameId" TEXT NOT NULL,
     "directorId" TEXT,
     "chairmanId" TEXT,
-    "directorSince" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "chairmanSince" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "Stock_gameId_fkey" FOREIGN KEY ("gameId") REFERENCES "Game" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "Stock_directorId_fkey" FOREIGN KEY ("directorId") REFERENCES "Player" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT "Stock_chairmanId_fkey" FOREIGN KEY ("chairmanId") REFERENCES "Player" ("id") ON DELETE SET NULL ON UPDATE CASCADE

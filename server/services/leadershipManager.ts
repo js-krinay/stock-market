@@ -31,7 +31,6 @@ export class LeadershipManager {
 
       // Determine chairman (≥CHAIRMAN_THRESHOLD)
       let chairmanId: string | null = null
-      let chairmanSince = new Date()
 
       const chairmanThresholdPercent = CHAIRMAN_THRESHOLD * 100
 
@@ -39,7 +38,6 @@ export class LeadershipManager {
         const existingChairman = ownership.find((o) => o.playerId === stock.chairmanId)
         if (existingChairman && existingChairman.percentage >= chairmanThresholdPercent) {
           chairmanId = stock.chairmanId
-          chairmanSince = stock.chairmanSince
         }
       }
 
@@ -47,13 +45,11 @@ export class LeadershipManager {
         const topHolder = ownership.find((o) => o.percentage >= chairmanThresholdPercent)
         if (topHolder) {
           chairmanId = topHolder.playerId
-          chairmanSince = new Date()
         }
       }
 
       // Determine director (≥DIRECTOR_THRESHOLD, but not chairman)
       let directorId: string | null = null
-      let directorSince = new Date()
 
       const directorThresholdPercent = DIRECTOR_THRESHOLD * 100
 
@@ -65,7 +61,6 @@ export class LeadershipManager {
           existingDirector.playerId !== chairmanId
         ) {
           directorId = stock.directorId
-          directorSince = stock.directorSince
         }
       }
 
@@ -75,7 +70,6 @@ export class LeadershipManager {
         )
         if (topQualifier) {
           directorId = topQualifier.playerId
-          directorSince = new Date()
         }
       }
 
@@ -85,8 +79,6 @@ export class LeadershipManager {
         data: {
           directorId,
           chairmanId,
-          directorSince,
-          chairmanSince,
         },
       })
     }

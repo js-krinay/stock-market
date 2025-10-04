@@ -7,8 +7,6 @@ export interface Stock {
   color: string
   directorId: string | null // Player ID of the director (owns ≥25%)
   chairmanId: string | null // Player ID of the chairman (owns ≥50%)
-  directorSince: number // Timestamp when director status was achieved
-  chairmanSince: number // Timestamp when chairman status was achieved
   priceHistory: Array<{ round: number; price: number }> // Track price history over rounds
 }
 
