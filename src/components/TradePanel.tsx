@@ -501,14 +501,23 @@ export function TradePanel({
         )}
 
         <div className="flex gap-2">
-          <Button onClick={handleTrade} disabled={!validation.isValid} className="flex-1">
+          <Button
+            onClick={handleTrade}
+            disabled={!validation.isValid || gameState.isComplete}
+            className="flex-1"
+          >
             {tradeType === 'buy'
               ? 'Buy Stock'
               : tradeType === 'sell'
                 ? 'Sell Stock'
                 : 'Play Corporate Action'}
           </Button>
-          <Button variant="outline" onClick={onSkip} className="flex-1">
+          <Button
+            variant="outline"
+            onClick={onSkip}
+            disabled={gameState.isComplete}
+            className="flex-1"
+          >
             Skip Turn
           </Button>
         </div>

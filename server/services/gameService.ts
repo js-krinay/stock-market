@@ -133,6 +133,7 @@ export class GameService {
       currentPlayerIndex: game.currentPlayerIndex,
       stocks: game.stocks.map((s) => mapDbStockToAppStock(s)),
       eventHistory: game.events.map((e) => mapDbEventToAppEvent(e)),
+      isComplete: game.isComplete,
     }
   }
 

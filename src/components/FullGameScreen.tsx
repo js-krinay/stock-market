@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useGameStore } from '@/store/gameStore'
 import { Stock } from '@/types'
 import { GameHeader } from './GameHeader'
@@ -25,6 +25,13 @@ export function FullGameScreen() {
   )
 
   const utils = trpc.useUtils()
+
+  // Redirect to leaderboard when game is complete
+  useEffect(() => {
+    if (gameState?.isComplete) {
+      setView('leaderboard')
+    }
+  }, [gameState?.isComplete, setView])
 
   const executeTradeMutation = trpc.game.executeTrade.useMutation({
     onSuccess: (result) => {

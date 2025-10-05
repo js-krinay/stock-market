@@ -24,7 +24,7 @@ export function GameHeader({ gameState, onViewLeaderboard }: GameHeaderProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex justify-between items-center flex-wrap gap-2">
-          <span>🎮 Stock Market Game</span>
+          <span>🎮 Stock Market Game{gameState.isComplete && ' - Game Over!'}</span>
           <div className="flex gap-2 items-center">
             <Button variant="ghost" size="sm" onClick={copyGameId} className="font-mono text-xs">
               📋 {gameId?.slice(0, 8)}...

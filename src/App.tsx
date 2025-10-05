@@ -12,7 +12,7 @@ function App() {
       {currentView === 'setup' && <SetupScreen />}
       {currentView === 'game' && <FullGameScreen />}
       {currentView === 'leaderboard' && <Leaderboard />}
-      <Toaster position="top-right" richColors />
+      <Toaster position="top-right" richColors expand visibleToasts={9} />
     </>
   )
 }

@@ -99,6 +99,7 @@ export interface GameState {
   currentPlayerIndex: number
   stocks: Stock[]
   eventHistory: MarketEvent[] // All events throughout the game
+  isComplete: boolean // Whether the game has ended
 }
 
 export interface TradeAction {

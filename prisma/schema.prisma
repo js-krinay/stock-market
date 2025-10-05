@@ -19,7 +19,6 @@ model Game {
   turnsPerRound       Int      @default(3)
   currentPlayerIndex  Int      @default(0)
   isComplete          Boolean  @default(false)
-  excludedCardId      String?  // Only one card can be excluded per round (null = none excluded)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
