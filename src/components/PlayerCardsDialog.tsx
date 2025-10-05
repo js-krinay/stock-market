@@ -57,42 +57,50 @@ export function PlayerCardsDialog({ playerName, cards, isOpen, onClose }: Player
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[98vw] w-[98vw] max-h-[95vh] overflow-y-auto">
+      <DialogContent className="!w-[75vw] !h-[75vh] !max-w-[75vw] !max-h-[75vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>
             {playerName}'s Cards ({cards.length} total)
           </DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-5 gap-4">
+        <div className="grid grid-cols-5 gap-4 overflow-y-auto flex-1">
           {cards.map((card, index) => {
             const isEvent = 'affectedStocks' in card
             return (
-              <div key={card.id} className="border rounded-lg overflow-hidden">
-                <div className="text-xs bg-gray-100 px-2 py-1 flex justify-between items-center border-b">
+              <div key={card.id} className="border rounded-lg overflow-hidden flex flex-col">
+                <div className="text-sm bg-gray-100 px-2 py-1 flex justify-between items-center border-b">
                   <span className="font-medium">Card {index + 1}</span>
                   <span>{isEvent ? '📰' : '💼'}</span>
                 </div>
 
                 {isEvent ? (
-                  <div className={`p-3 ${getEventBgColor(card as MarketEvent)} h-48 flex flex-col`}>
-                    <div className="font-bold text-sm mb-2 line-clamp-2">{card.title}</div>
-                    <div className="text-xs mb-2 line-clamp-4 flex-1">{card.description}</div>
-                    <div className="text-xs font-semibold mt-auto">
-                      Impact: {(card as MarketEvent).impact > 0 ? '+' : ''}$
-                      {(card as MarketEvent).impact}
+                  <div
+                    className={`p-3 ${getEventBgColor(card as MarketEvent)} flex flex-col flex-1`}
+                  >
+                    <div className="font-bold text-base mb-2 line-clamp-2">{card.title}</div>
+                    <div className="text-sm mb-2 line-clamp-4 flex-1">{card.description}</div>
+                    <div className="text-sm font-semibold mt-auto">
+                      Impact: {(card as MarketEvent).impact > 0 ? '+' : ''}
+                      {(card as MarketEvent).type === 'inflation' ||
+                      (card as MarketEvent).type === 'deflation'
+                        ? `${(card as MarketEvent).impact}%`
+                        : `$${(card as MarketEvent).impact}`}
                     </div>
-                    <div className="text-xs opacity-80 mt-1 line-clamp-2">
-                      Stocks: {(card as MarketEvent).affectedStocks.join(', ')}
+                    <div className="text-sm font-semibold opacity-80 mt-1 line-clamp-2">
+                      {(card as MarketEvent).type === 'inflation' ||
+                      (card as MarketEvent).type === 'deflation'
+                        ? 'Affects: Cash'
+                        : `Stocks: ${(card as MarketEvent).affectedStocks.join(', ')}`}
                     </div>
                   </div>
                 ) : (
                   <div
-                    className={`p-3 ${getCorporateActionBgColor((card as CorporateAction).type)} h-48 flex flex-col`}
+                    className={`p-3 ${getCorporateActionBgColor((card as CorporateAction).type)} flex flex-col flex-1`}
                   >
-                    <div className="font-bold text-sm mb-2 line-clamp-2">{card.title}</div>
-                    <div className="text-xs mb-2 line-clamp-4 flex-1">{card.description}</div>
-                    <div className="text-xs font-semibold mt-auto">
+                    <div className="font-bold text-base mb-2 line-clamp-2">{card.title}</div>
+                    <div className="text-sm mb-2 line-clamp-4 flex-1">{card.description}</div>
+                    <div className="text-sm font-semibold mt-auto">
                       {(card as CorporateAction).played ? '✅ Played' : '⏳ Available'}
                     </div>
                   </div>
@@ -102,7 +110,7 @@ export function PlayerCardsDialog({ playerName, cards, isOpen, onClose }: Player
           })}
         </div>
 
-        <div className="pt-4 border-t">
+        <div className="pt-4 border-t flex-shrink-0">
           <Button onClick={onClose} className="w-full">
             Close
           </Button>
