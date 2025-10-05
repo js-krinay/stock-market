@@ -36,6 +36,8 @@ export function calculateOwnership(
 /**
  * Determine chairman from ownership data
  * Chairman requires ≥50% ownership
+ * Chairman is the highest qualifying shareholder
+ * In case of a tie, existing chairman is retained if they are among the tied players
  */
 export function determineChairman(
   ownership: OwnershipData[],
@@ -44,22 +46,36 @@ export function determineChairman(
 ): string | null {
   const chairmanThresholdPercent = chairmanThreshold * 100
 
-  // Check if existing chairman still qualifies
-  if (currentChairmanId) {
-    const existingChairman = ownership.find((o) => o.playerId === currentChairmanId)
-    if (existingChairman && existingChairman.percentage >= chairmanThresholdPercent) {
+  // Find all qualifying shareholders (ownership is already sorted by quantity desc)
+  const qualifyingOwners = ownership.filter((o) => o.percentage >= chairmanThresholdPercent)
+
+  if (qualifyingOwners.length === 0) {
+    return null
+  }
+
+  // Get the highest quantity among qualifiers
+  const highestQuantity = qualifyingOwners[0].quantity
+
+  // Check if there's a tie at the top
+  const tiedOwners = qualifyingOwners.filter((o) => o.quantity === highestQuantity)
+
+  // If there's a tie and the current chairman is among the tied players, retain them
+  if (tiedOwners.length > 1 && currentChairmanId) {
+    const currentChairmanInTie = tiedOwners.find((o) => o.playerId === currentChairmanId)
+    if (currentChairmanInTie) {
       return currentChairmanId
     }
   }
 
-  // Find new chairman
-  const topHolder = ownership.find((o) => o.percentage >= chairmanThresholdPercent)
-  return topHolder ? topHolder.playerId : null
+  // Otherwise, return the highest qualifying shareholder
+  return qualifyingOwners[0].playerId
 }
 
 /**
  * Determine director from ownership data
  * Director requires ≥25% ownership and cannot be the chairman
+ * Director is the highest qualifying shareholder
+ * In case of a tie, existing director is retained if they are among the tied players
  */
 export function determineDirector(
   ownership: OwnershipData[],
@@ -69,23 +85,31 @@ export function determineDirector(
 ): string | null {
   const directorThresholdPercent = directorThreshold * 100
 
-  // Check if existing director still qualifies
-  if (currentDirectorId) {
-    const existingDirector = ownership.find((o) => o.playerId === currentDirectorId)
-    if (
-      existingDirector &&
-      existingDirector.percentage >= directorThresholdPercent &&
-      existingDirector.playerId !== chairmanId
-    ) {
+  // Find all qualifying shareholders (ownership is already sorted by quantity desc)
+  const qualifyingOwners = ownership.filter(
+    (o) => o.percentage >= directorThresholdPercent && o.playerId !== chairmanId
+  )
+
+  if (qualifyingOwners.length === 0) {
+    return null
+  }
+
+  // Get the highest quantity among qualifiers
+  const highestQuantity = qualifyingOwners[0].quantity
+
+  // Check if there's a tie at the top
+  const tiedOwners = qualifyingOwners.filter((o) => o.quantity === highestQuantity)
+
+  // If there's a tie and the current director is among the tied players, retain them
+  if (tiedOwners.length > 1 && currentDirectorId) {
+    const currentDirectorInTie = tiedOwners.find((o) => o.playerId === currentDirectorId)
+    if (currentDirectorInTie) {
       return currentDirectorId
     }
   }
 
-  // Find new director
-  const topQualifier = ownership.find(
-    (o) => o.percentage >= directorThresholdPercent && o.playerId !== chairmanId
-  )
-  return topQualifier ? topQualifier.playerId : null
+  // Otherwise, return the highest qualifying shareholder
+  return qualifyingOwners[0].playerId
 }
 
 /**
@@ -105,4 +129,26 @@ export function calculateLeadership(
   const directorId = determineDirector(ownership, currentDirectorId, chairmanId, directorThreshold)
 
   return { chairmanId, directorId }
+}
+
+/**
+ * Check if a player is chairman or director of any stock
+ */
+export function isPlayerLeader(
+  playerId: string,
+  stocks: Array<{ chairmanId: string | null; directorId: string | null }>
+): boolean {
+  return stocks.some((stock) => stock.chairmanId === playerId || stock.directorId === playerId)
+}
+
+/**
+ * Get stocks where player is chairman or director
+ */
+export function getLeadershipStocks(
+  playerId: string,
+  stocks: Array<{ symbol: string; chairmanId: string | null; directorId: string | null }>
+): string[] {
+  return stocks
+    .filter((stock) => stock.chairmanId === playerId || stock.directorId === playerId)
+    .map((stock) => stock.symbol)
 }
