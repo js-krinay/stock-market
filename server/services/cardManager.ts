@@ -1,16 +1,16 @@
 import { PrismaClient } from '@prisma/client'
-import { EventSystem } from '../utils/events'
-import { CorporateActionManager } from '../utils/corporateActions'
+import { EventGenerator } from './eventGenerator'
+import { CorporateActionGenerator } from './corporateActionGenerator'
 import { CARDS_PER_PLAYER, CORPORATE_ACTION_PERCENTAGE } from '../constants'
 import { Errors } from '../errors'
 
 export class CardManager {
-  private eventSystem: EventSystem
-  private corporateActionManager: CorporateActionManager
+  private eventGenerator: EventGenerator
+  private corporateActionGenerator: CorporateActionGenerator
 
   constructor(private prisma: PrismaClient) {
-    this.eventSystem = new EventSystem()
-    this.corporateActionManager = new CorporateActionManager()
+    this.eventGenerator = new EventGenerator()
+    this.corporateActionGenerator = new CorporateActionGenerator()
   }
 
   /**
@@ -47,7 +47,7 @@ export class CardManager {
 
         if (cardType === 'event') {
           // Generate event card
-          const event = this.eventSystem.getRandomEvent(game.currentRound)
+          const event = this.eventGenerator.getRandomEvent(game.currentRound)
           await this.prisma.marketEvent.create({
             data: {
               eventId: event.id,
@@ -64,7 +64,7 @@ export class CardManager {
           })
         } else {
           // Generate corporate action card (always returns a valid action now)
-          const corporateAction = this.corporateActionManager.generateCorporateAction(
+          const corporateAction = this.corporateActionGenerator.generateCorporateAction(
             game.currentRound,
             i
           )
