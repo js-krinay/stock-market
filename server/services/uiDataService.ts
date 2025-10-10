@@ -148,6 +148,74 @@ export class UIDataService {
   }
 
   /**
+   * Get player rankings sorted by net worth
+   */
+  async getPlayerRankings(gameId: string): Promise<
+    Array<{
+      player: {
+        id: string
+        name: string
+        cash: number
+        portfolio: Array<{
+          symbol: string
+          quantity: number
+          averageCost: number
+        }>
+        actionHistory: never[]
+        events: never[]
+        corporateActions: never[]
+      }
+      totalValue: number
+      rank: number
+    }>
+  > {
+    const game = await this.prisma.game.findUnique({
+      where: { id: gameId },
+      include: {
+        players: {
+          include: {
+            portfolio: true,
+          },
+        },
+        stocks: true,
+      },
+    })
+
+    if (!game) throw Errors.gameNotFound(gameId)
+
+    const rankings = game.players.map((player) => {
+      const portfolioValue = player.portfolio.reduce((total, holding) => {
+        const stock = game.stocks.find((s) => s.symbol === holding.symbol)
+        return total + (stock ? stock.price * holding.quantity : 0)
+      }, 0)
+
+      return {
+        player: {
+          id: player.id,
+          name: player.name,
+          cash: player.cash,
+          portfolio: player.portfolio.map((h) => ({
+            symbol: h.symbol,
+            quantity: h.quantity,
+            averageCost: h.averageCost,
+          })),
+          actionHistory: [],
+          events: [],
+          corporateActions: [],
+        },
+        totalValue: player.cash + portfolioValue,
+      }
+    })
+
+    rankings.sort((a, b) => b.totalValue - a.totalValue)
+
+    return rankings.map((entry, index) => ({
+      ...entry,
+      rank: index + 1,
+    }))
+  }
+
+  /**
    * Get preview for corporate action
    */
   async getCorporateActionPreview(

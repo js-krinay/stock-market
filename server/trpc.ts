@@ -2,8 +2,13 @@ import { initTRPC, TRPCError } from '@trpc/server'
 import { prisma } from './db'
 import { isGameError, mapStatusToTRPCCode } from './errors'
 
+/**
+ * Create tRPC context
+ * Note: Now that we use ServiceContainer, ctx.prisma is only needed
+ * for procedures that haven't been migrated to services yet
+ */
 export const createContext = () => ({
-  prisma,
+  prisma, // Keep for backward compatibility
 })
 
 export type Context = Awaited<ReturnType<typeof createContext>>

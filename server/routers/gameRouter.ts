@@ -1,7 +1,6 @@
 import { z } from 'zod'
 import { router, publicProcedure } from '../trpc'
-import { GameService } from '../services/gameService'
-import { UIDataService } from '../services/uiDataService'
+import { ServiceContainer } from '../container'
 import { Errors } from '../errors'
 
 export const gameRouter = router({
@@ -13,8 +12,8 @@ export const gameRouter = router({
         maxRounds: z.number().min(1).max(50).default(10),
       })
     )
-    .mutation(async ({ input, ctx }) => {
-      const gameService = new GameService(ctx.prisma)
+    .mutation(async ({ input }) => {
+      const gameService = ServiceContainer.getInstance().getGameService()
       const gameId = await gameService.createGame(input.playerNames, input.maxRounds)
       return { gameId }
     }),
@@ -22,8 +21,8 @@ export const gameRouter = router({
   // Get game state
   getGameState: publicProcedure
     .input(z.object({ gameId: z.string() }))
-    .query(async ({ input, ctx }) => {
-      const gameService = new GameService(ctx.prisma)
+    .query(async ({ input }) => {
+      const gameService = ServiceContainer.getInstance().getGameService()
       const gameState = await gameService.getGameState(input.gameId)
       return gameState
     }),
@@ -41,8 +40,8 @@ export const gameRouter = router({
         }),
       })
     )
-    .mutation(async ({ input, ctx }) => {
-      const gameService = new GameService(ctx.prisma)
+    .mutation(async ({ input }) => {
+      const gameService = ServiceContainer.getInstance().getGameService()
       const result = await gameService.executeTrade(input.gameId, input.action)
       return result
     }),
@@ -50,8 +49,8 @@ export const gameRouter = router({
   // End turn
   endTurn: publicProcedure
     .input(z.object({ gameId: z.string() }))
-    .mutation(async ({ input, ctx }) => {
-      const gameService = new GameService(ctx.prisma)
+    .mutation(async ({ input }) => {
+      const gameService = ServiceContainer.getInstance().getGameService()
       const result = await gameService.endTurn(input.gameId)
       return result
     }),
@@ -59,58 +58,16 @@ export const gameRouter = router({
   // Get player rankings
   getPlayerRankings: publicProcedure
     .input(z.object({ gameId: z.string() }))
-    .query(async ({ input, ctx }) => {
-      const game = await ctx.prisma.game.findUnique({
-        where: { id: input.gameId },
-        include: {
-          players: {
-            include: {
-              portfolio: true,
-            },
-          },
-          stocks: true,
-        },
-      })
-
-      if (!game) throw Errors.gameNotFound(input.gameId)
-
-      const rankings = game.players.map((player) => {
-        const portfolioValue = player.portfolio.reduce((total, holding) => {
-          const stock = game.stocks.find((s) => s.symbol === holding.symbol)
-          return total + (stock ? stock.price * holding.quantity : 0)
-        }, 0)
-
-        return {
-          player: {
-            id: player.id,
-            name: player.name,
-            cash: player.cash,
-            portfolio: player.portfolio.map((h) => ({
-              symbol: h.symbol,
-              quantity: h.quantity,
-              averageCost: h.averageCost,
-            })),
-            actionHistory: [],
-            events: [],
-            corporateActions: [],
-          },
-          totalValue: player.cash + portfolioValue,
-        }
-      })
-
-      rankings.sort((a, b) => b.totalValue - a.totalValue)
-
-      return rankings.map((entry, index) => ({
-        ...entry,
-        rank: index + 1,
-      }))
+    .query(async ({ input }) => {
+      const uiDataService = ServiceContainer.getInstance().getUIDataService()
+      return await uiDataService.getPlayerRankings(input.gameId)
     }),
 
   // Get active rights issues for current player
   getActiveRightsIssues: publicProcedure
     .input(z.object({ gameId: z.string() }))
-    .query(async ({ input, ctx }) => {
-      const gameService = new GameService(ctx.prisma)
+    .query(async ({ input }) => {
+      const gameService = ServiceContainer.getInstance().getGameService()
       const activeRightsIssues = await gameService.getActiveRightsIssues(input.gameId)
       return activeRightsIssues
     }),
@@ -154,8 +111,8 @@ export const gameRouter = router({
   // Get portfolio data with calculations
   getPortfolioData: publicProcedure
     .input(z.object({ gameId: z.string() }))
-    .query(async ({ input, ctx }) => {
-      const uiDataService = new UIDataService(ctx.prisma)
+    .query(async ({ input }) => {
+      const uiDataService = ServiceContainer.getInstance().getUIDataService()
       return await uiDataService.getPortfolioData(input.gameId)
     }),
 
@@ -169,8 +126,8 @@ export const gameRouter = router({
         quantity: z.number().optional(),
       })
     )
-    .query(async ({ input, ctx }) => {
-      const uiDataService = new UIDataService(ctx.prisma)
+    .query(async ({ input }) => {
+      const uiDataService = ServiceContainer.getInstance().getUIDataService()
       return await uiDataService.validateTrade(
         input.gameId,
         input.type,
@@ -189,8 +146,8 @@ export const gameRouter = router({
         quantity: z.number().optional(),
       })
     )
-    .query(async ({ input, ctx }) => {
-      const uiDataService = new UIDataService(ctx.prisma)
+    .query(async ({ input }) => {
+      const uiDataService = ServiceContainer.getInstance().getUIDataService()
       return await uiDataService.getCorporateActionPreview(
         input.gameId,
         input.corporateActionId,
