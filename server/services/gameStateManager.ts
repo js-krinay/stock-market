@@ -6,6 +6,7 @@ import {
   mapDbEventToAppEvent,
   mapDbActionToAppAction,
 } from './mappers'
+import { Errors } from '../errors'
 
 /**
  * GameStateManager - Handles game state queries and data retrieval
@@ -49,7 +50,7 @@ export class GameStateManager {
       },
     })
 
-    if (!game) throw new Error('Game not found')
+    if (!game) throw Errors.gameNotFound(gameId)
 
     return {
       currentRound: game.currentRound,
@@ -73,7 +74,7 @@ export class GameStateManager {
       include: { players: true },
     })
 
-    if (!game) throw new Error('Game not found')
+    if (!game) throw Errors.gameNotFound(gameId)
 
     const currentPlayer = game.players[game.currentPlayerIndex]
 

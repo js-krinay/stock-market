@@ -8,6 +8,7 @@ import {
   calculateSellPortfolioUpdate,
   calculateSaleProfit,
 } from '../utils/trading'
+import { Errors } from '../errors'
 
 export class TradeExecutor {
   constructor(private prisma: PrismaClient) {}
@@ -34,7 +35,7 @@ export class TradeExecutor {
       },
     })
 
-    if (!game) throw new Error('Game not found')
+    if (!game) throw Errors.gameNotFound(gameId)
 
     const currentPlayer = game.players[game.currentPlayerIndex]
 
@@ -373,7 +374,7 @@ export class TradeExecutor {
     // Calculate right issue price using discount from corporate action details
     const discountPercentage = details.discountPercentage
     if (!discountPercentage) {
-      throw new Error('Right issue discount percentage not found in corporate action details')
+      throw Errors.internal('Right issue discount percentage not found in corporate action details')
     }
     const rightIssuePrice = stock.price * discountPercentage
     const totalCost = action.quantity * rightIssuePrice

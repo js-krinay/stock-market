@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client'
 import { CardManager } from './cardManager'
 import { RoundProcessor } from './roundProcessor'
+import { Errors } from '../errors'
 
 /**
  * TurnManager - Handles turn progression and round transitions
@@ -29,7 +30,7 @@ export class TurnManager {
       include: { players: true },
     })
 
-    if (!game) throw new Error('Game not found')
+    if (!game) throw Errors.gameNotFound(gameId)
 
     // Move to next player
     const nextPlayerIndex = (game.currentPlayerIndex + 1) % game.players.length

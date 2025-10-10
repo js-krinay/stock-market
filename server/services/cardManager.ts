@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client'
 import { EventSystem } from '../utils/events'
 import { CorporateActionManager } from '../utils/corporateActions'
 import { CARDS_PER_PLAYER, CORPORATE_ACTION_PERCENTAGE } from '../constants'
+import { Errors } from '../errors'
 
 export class CardManager {
   private eventSystem: EventSystem
@@ -21,7 +22,7 @@ export class CardManager {
       include: { players: true, stocks: true },
     })
 
-    if (!game) throw new Error('Game not found')
+    if (!game) throw Errors.gameNotFound(gameId)
 
     for (const player of game.players) {
       // Calculate split: 1 corporate action, 9 events for 10 cards

@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { router, publicProcedure } from '../trpc'
 import { GameService } from '../services/gameService'
 import { UIDataService } from '../services/uiDataService'
+import { Errors } from '../errors'
 
 export const gameRouter = router({
   // Create a new game
@@ -71,7 +72,7 @@ export const gameRouter = router({
         },
       })
 
-      if (!game) throw new Error('Game not found')
+      if (!game) throw Errors.gameNotFound(input.gameId)
 
       const rankings = game.players.map((player) => {
         const portfolioValue = player.portfolio.reduce((total, holding) => {
@@ -129,7 +130,7 @@ export const gameRouter = router({
         },
       })
 
-      if (!game) throw new Error('Game not found')
+      if (!game) throw Errors.gameNotFound(input.gameId)
 
       const currentPlayer = game.players[game.currentPlayerIndex]
       const unplayedActions = currentPlayer.corporateActions

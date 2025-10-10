@@ -8,6 +8,7 @@ import type {
   RightIssueDetails,
   BonusIssueDetails,
 } from '../types'
+import { Errors } from '../errors'
 
 export class UIDataService {
   constructor(private prisma: PrismaClient) {}
@@ -28,7 +29,7 @@ export class UIDataService {
       },
     })
 
-    if (!game) throw new Error('Game not found')
+    if (!game) throw Errors.gameNotFound(gameId)
 
     const currentPlayer = game.players[game.currentPlayerIndex]
 
@@ -81,7 +82,7 @@ export class UIDataService {
       },
     })
 
-    if (!game) throw new Error('Game not found')
+    if (!game) throw Errors.gameNotFound(gameId)
 
     const currentPlayer = game.players[game.currentPlayerIndex]
     const stock = game.stocks.find((s) => s.symbol === symbol)
@@ -168,7 +169,7 @@ export class UIDataService {
       },
     })
 
-    if (!game) throw new Error('Game not found')
+    if (!game) throw Errors.gameNotFound(gameId)
 
     const currentPlayer = game.players[game.currentPlayerIndex]
     const corporateAction = currentPlayer.corporateActions.find(

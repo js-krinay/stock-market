@@ -4,6 +4,7 @@ import {
   applyCashImpact,
   calculatePriceChangePercentage,
 } from '../utils/pricing'
+import { Errors } from '../errors'
 
 type TransactionClient = Omit<
   PrismaClient,
@@ -24,7 +25,7 @@ export class RoundProcessor {
       where: { id: gameId },
     })
 
-    if (!game) throw new Error('Game not found')
+    if (!game) throw Errors.gameNotFound(gameId)
 
     // Process all events: accumulate, apply impacts, add history, and cleanup
     await this.processRoundEvents(gameId, game.currentRound)
@@ -70,7 +71,7 @@ export class RoundProcessor {
         include: { stocks: true },
       })
 
-      if (!game) throw new Error('Game not found')
+      if (!game) throw Errors.gameNotFound(gameId)
 
       // Step 2: Load all events for the current round
       const events = await tx.marketEvent.findMany({
