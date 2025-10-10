@@ -215,6 +215,25 @@ Each stock has:
 - **shadcn/ui**: Re-usable UI components
 - **Sonner**: Toast notifications
 
+## 🏛️ Architecture Highlights
+
+### Modern Service Architecture
+
+- **Interface-based design**: Services depend on abstractions, not implementations
+- **Singleton pattern**: Centralized service management via ServiceContainer
+- **Clean separation**: Clear boundaries between layers (UI → API → Services → Utils → Data)
+- **Type-safe**: End-to-end TypeScript with tRPC for client-server communication
+
+### Key Patterns
+
+- ✅ **Facade Pattern**: GameService provides unified interface
+- ✅ **Dependency Injection**: Services receive dependencies via constructor
+- ✅ **Service Layer**: Business logic isolated from API and data layers
+- ✅ **Pure Functions**: Utils contain only deterministic calculations
+- ✅ **Singleton**: Single service instances managed by container
+
+See [CLAUDE.md](CLAUDE.md) for detailed architecture documentation.
+
 ## 📁 Project Structure
 
 ```

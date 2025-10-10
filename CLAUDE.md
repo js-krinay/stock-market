@@ -4,18 +4,168 @@ This document provides technical details about the Stock Market Game's architect
 
 ## 🏗️ Architecture Overview
 
-### Core Design Pattern
-The game follows a **modular object-oriented architecture** with clear separation of concerns:
+### Modern Service Architecture
+
+The codebase uses a **layered service architecture** with interface-based dependency injection:
 
 ```
-UI Layer (ui.ts)
-    ↓
-Game Engine (game.ts)
-    ↓
-Systems Layer (market.ts, events.ts, player.ts, corporateActions.ts)
-    ↓
-Data Layer (types.ts)
+┌─────────────────────────────────────┐
+│  UI Layer (React Components)        │  User interactions
+├─────────────────────────────────────┤
+│  API Layer (tRPC Routers)           │  Type-safe RPC
+├─────────────────────────────────────┤
+│  Service Layer (Business Logic)     │  Game rules, orchestration
+├─────────────────────────────────────┤
+│  Utils Layer (Pure Functions)       │  Calculations, validations
+├─────────────────────────────────────┤
+│  Data Layer (Prisma ORM)            │  Database access
+└─────────────────────────────────────┘
 ```
+
+### Interface-Based Design
+
+Services depend on interfaces for better testability and flexibility:
+
+```typescript
+// Services depend on interfaces, not concrete implementations
+export class GameService {
+  constructor(
+    private gameInitializer: IGameInitializer,
+    private gameStateService: IGameStateService,
+    private tradeService: ITradeService,
+    private turnService: ITurnService,
+    private leadershipService: ILeadershipService
+  ) {}
+}
+```
+
+**Location:** [server/interfaces/](server/interfaces/)
+
+---
+
+### Service Container (Singleton Pattern)
+
+All services are managed through **ServiceContainer** for consistent lifecycle management:
+
+```typescript
+// server/index.ts - Initialize once at startup
+ServiceContainer.initialize(prisma)
+
+// server/routers/gameRouter.ts - Use throughout application
+const gameService = ServiceContainer.getInstance().getGameService()
+```
+
+**Location:** [server/container.ts](server/container.ts)
+
+---
+
+### Utils/Services Separation
+
+The codebase maintains **strict separation between utils (pure functions) and services (orchestration)**:
+
+**Utils contain only pure functions:**
+- Deterministic (same input → same output)
+- No side effects (no database, no I/O, no mutations)
+- No randomness (Math.random handled in services)
+- No state management
+
+**Services handle orchestration:**
+- Database operations
+- Random number generation
+- Event coordination
+- State management
+
+**Verification:** 23 purity tests ensure utils remain pure and prevent boundary violations.
+
+**Location:** [claudedocs/architecture/utils-services-verification.md](claudedocs/architecture/utils-services-verification.md)
+
+---
+
+## Service Dependency Graph
+
+```
+ServiceContainer (Singleton)
+├─> GameService (Facade)
+│   ├─> GameInitializer → PrismaClient
+│   ├─> GameStateManager → PrismaClient
+│   ├─> TradeExecutor → PrismaClient
+│   ├─> TurnManager → PrismaClient
+│   └─> LeadershipManager → PrismaClient
+│
+└─> UIDataService → PrismaClient
+```
+
+**Key characteristics:**
+- Interface-based dependencies (dependency inversion)
+- Single service instances managed by container
+- Clear separation between services and utils
+
+---
+
+## Developer Guide
+
+### Using Services in New Code
+
+```typescript
+// ✅ DO: Use ServiceContainer
+import { ServiceContainer } from '../container'
+
+const gameService = ServiceContainer.getInstance().getGameService()
+const result = await gameService.createGame(['Alice', 'Bob'], 10)
+
+// ❌ DON'T: Create new service instances
+const gameService = new GameService(prisma)  // ❌ Don't do this
+```
+
+### Writing Tests
+
+```typescript
+// Integration tests use real Prisma (recommended approach)
+import prisma from '../server/db'
+
+const gameService = new GameService(
+  new GameInitializer(prisma),
+  new GameStateManager(prisma),
+  // ... real services
+)
+
+// All tests run against real database for confidence
+```
+
+### Creating New Services
+
+```typescript
+// 1. Define interface
+export interface IMyService {
+  doSomething(input: string): Promise<Result>
+}
+
+// 2. Implement interface
+export class MyService implements IMyService {
+  constructor(private prisma: PrismaClient) {}
+
+  async doSomething(input: string): Promise<Result> {
+    // Implementation
+  }
+}
+
+// 3. Add to ServiceContainer
+class ServiceContainer {
+  private myServiceInstance: MyService | null = null
+
+  getMyService(): IMyService {
+    if (!this.myServiceInstance) {
+      this.myServiceInstance = new MyService(this.prisma)
+    }
+    return this.myServiceInstance
+  }
+}
+
+// 4. Write integration tests
+// Use real Prisma for realistic behavior and high confidence
+```
+
+---
 
 ## 📦 Module Breakdown
 
