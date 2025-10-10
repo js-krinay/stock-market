@@ -24,6 +24,11 @@ export function FullGameScreen() {
     { enabled: !!gameId, refetchInterval: false }
   )
 
+  const { data: portfolioData } = trpc.game.getPortfolioData.useQuery(
+    { gameId: gameId! },
+    { enabled: !!gameId && !!gameState, refetchInterval: false }
+  )
+
   const utils = trpc.useUtils()
 
   // Redirect to leaderboard when game is complete
@@ -77,8 +82,9 @@ export function FullGameScreen() {
         setProcessingRound(false)
       }
 
-      // Refetch game state
+      // Refetch game state and portfolio data
       await utils.game.getGameState.invalidate()
+      await utils.game.getPortfolioData.invalidate()
 
       if (result.gameOver) {
         setView('leaderboard')
@@ -99,35 +105,6 @@ export function FullGameScreen() {
   }
 
   const currentPlayer = gameState.players[gameState.currentPlayerIndex]
-
-  // Calculate portfolio value
-  const portfolioValue = currentPlayer.portfolio.reduce((total, holding) => {
-    const stock = gameState.stocks.find((s) => s.symbol === holding.symbol)
-    return total + (stock ? stock.price * holding.quantity : 0)
-  }, 0)
-
-  const portfolio = {
-    cash: currentPlayer.cash,
-    holdings: currentPlayer.portfolio.map((holding) => {
-      const stock = gameState.stocks.find((s) => s.symbol === holding.symbol)
-      const currentPrice = stock?.price || 0
-      const totalValue = currentPrice * holding.quantity
-      const costBasis = holding.averageCost * holding.quantity
-      const profitLoss = totalValue - costBasis
-      const profitLossPercent = (profitLoss / costBasis) * 100
-
-      return {
-        symbol: holding.symbol,
-        quantity: holding.quantity,
-        averageCost: holding.averageCost,
-        currentPrice,
-        totalValue: Math.round(totalValue * 100) / 100,
-        profitLoss: Math.round(profitLoss * 100) / 100,
-        profitLossPercent: Math.round(profitLossPercent * 100) / 100,
-      }
-    }),
-    totalValue: currentPlayer.cash + portfolioValue,
-  }
 
   const handleTrade = async (type: 'buy' | 'sell', symbol: string, quantity: number) => {
     executeTradeMutation.mutate({
@@ -187,7 +164,9 @@ export function FullGameScreen() {
         </div>
 
         {/* Portfolio */}
-        <PortfolioTable gameState={gameState} currentPlayer={currentPlayer} portfolio={portfolio} />
+        {portfolioData && (
+          <PortfolioTable gameState={gameState} currentPlayer={currentPlayer} portfolio={portfolioData} />
+        )}
 
         {/* All Players */}
         <AllPlayersTable gameState={gameState} currentPlayer={currentPlayer} />

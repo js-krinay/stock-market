@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { router, publicProcedure } from '../trpc'
 import { GameService } from '../services/gameService'
+import { UIDataService } from '../services/uiDataService'
 
 export const gameRouter = router({
   // Create a new game
@@ -147,5 +148,48 @@ export const gameRouter = router({
         }))
 
       return unplayedActions
+    }),
+
+  // Get portfolio data with calculations
+  getPortfolioData: publicProcedure
+    .input(z.object({ gameId: z.string() }))
+    .query(async ({ input, ctx }) => {
+      const uiDataService = new UIDataService(ctx.prisma)
+      return await uiDataService.getPortfolioData(input.gameId)
+    }),
+
+  // Validate trade
+  validateTrade: publicProcedure
+    .input(
+      z.object({
+        gameId: z.string(),
+        type: z.enum(['buy', 'sell']),
+        symbol: z.string(),
+        quantity: z.number().optional(),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      const uiDataService = new UIDataService(ctx.prisma)
+      return await uiDataService.validateTrade(input.gameId, input.type, input.symbol, input.quantity)
+    }),
+
+  // Get corporate action preview
+  getCorporateActionPreview: publicProcedure
+    .input(
+      z.object({
+        gameId: z.string(),
+        corporateActionId: z.string(),
+        stockSymbol: z.string(),
+        quantity: z.number().optional(),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      const uiDataService = new UIDataService(ctx.prisma)
+      return await uiDataService.getCorporateActionPreview(
+        input.gameId,
+        input.corporateActionId,
+        input.stockSymbol,
+        input.quantity
+      )
     }),
 })

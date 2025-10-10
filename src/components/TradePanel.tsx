@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,14 +9,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  GameState,
-  Player,
-  CorporateAction,
-  DividendDetails,
-  RightIssueDetails,
-  BonusIssueDetails,
-} from '@/types'
+import { GameState, Player } from '@/types'
+import { trpc } from '@/utils/trpc'
+import { useGameStore } from '@/store/gameStore'
 
 interface TradePanelProps {
   gameState: GameState
@@ -37,6 +32,7 @@ export function TradePanel({
   onSkip,
   onPlayCorporateAction,
 }: TradePanelProps) {
+  const gameId = useGameStore((state) => state.gameId)
   const [tradeQuantity, setTradeQuantity] = useState('')
   const [tradeType, setTradeType] = useState<'buy' | 'sell' | 'corporate'>('buy')
   const [selectedCorporateAction, setSelectedCorporateAction] = useState<string>('')
@@ -46,104 +42,75 @@ export function TradePanel({
   const selectedStock = gameState.stocks.find((s) => s.symbol === selectedSymbol)
   const quantity = parseInt(tradeQuantity) || 0
 
-  // Calculate max allowed quantity for buy/sell
-  const getMaxQuantity = (): number => {
-    if (!selectedStock) return 0
-
-    if (tradeType === 'buy') {
-      const maxByCash = Math.floor(currentPlayer.cash / selectedStock.price)
-      const maxByMarket = selectedStock.availableQuantity
-      return Math.min(maxByCash, maxByMarket)
-    } else if (tradeType === 'sell') {
-      const holding = currentPlayer.portfolio.find((h) => h.symbol === selectedSymbol)
-      return holding?.quantity || 0
-    }
-
-    return 0
-  }
-
-  const maxQuantity = getMaxQuantity()
-
-  // Get unplayed corporate actions for the current player
-  const getCorporateActions = (): CorporateAction[] => {
-    return currentPlayer.corporateActions.filter((action) => !action.played)
-  }
-
-  const corporateActions = getCorporateActions()
+  // Get unplayed corporate actions
+  const corporateActions = currentPlayer.corporateActions.filter((action) => !action.played)
   const selectedAction = corporateActions.find((a) => a.id === selectedCorporateAction)
 
-  const getTradeValidation = () => {
-    if (tradeType === 'corporate') {
-      if (!selectedCorporateAction) {
-        return { isValid: false, error: 'Please select a corporate action to play' }
-      }
-
-      const action = selectedAction
-      if (!action) {
-        return { isValid: false, error: 'Selected corporate action not found' }
-      }
-
-      if (!corporateActionStock) {
-        return { isValid: false, error: 'Please select a stock for the corporate action' }
-      }
-
-      // For right issues, validate quantity
-      if (action.type === 'right_issue') {
-        const qty = parseInt(rightIssueQuantity) || 0
-        if (qty <= 0) {
-          return { isValid: false, error: 'Please enter a valid quantity for right issue' }
-        }
-      }
-
-      return { isValid: true, error: null }
+  // Query trade validation from server
+  const { data: tradeValidation } = trpc.game.validateTrade.useQuery(
+    {
+      gameId: gameId!,
+      type: tradeType === 'buy' || tradeType === 'sell' ? tradeType : 'buy',
+      symbol: selectedSymbol,
+      quantity: quantity > 0 ? quantity : undefined,
+    },
+    {
+      enabled:
+        !!gameId &&
+        !!selectedSymbol &&
+        (tradeType === 'buy' || tradeType === 'sell') &&
+        !gameState.isComplete,
+      refetchOnMount: true,
+      refetchOnWindowFocus: false,
     }
-    if (!selectedSymbol || !tradeQuantity || quantity <= 0) {
-      return { isValid: false, error: 'Please select a stock and enter a valid quantity' }
+  )
+
+  // Query corporate action preview from server
+  const { data: corporateActionPreview } = trpc.game.getCorporateActionPreview.useQuery(
+    {
+      gameId: gameId!,
+      corporateActionId: selectedCorporateAction,
+      stockSymbol: corporateActionStock,
+      quantity:
+        selectedAction?.type === 'right_issue' && parseInt(rightIssueQuantity) > 0
+          ? parseInt(rightIssueQuantity)
+          : undefined,
+    },
+    {
+      enabled:
+        !!gameId &&
+        !!selectedCorporateAction &&
+        !!corporateActionStock &&
+        tradeType === 'corporate' &&
+        !gameState.isComplete,
+      refetchOnMount: true,
+      refetchOnWindowFocus: false,
     }
+  )
 
-    if (!selectedStock) {
-      return { isValid: false, error: 'Selected stock not found' }
-    }
-
-    if (tradeType === 'buy') {
-      const totalCost = selectedStock.price * quantity
-      if (totalCost > currentPlayer.cash) {
-        return {
-          isValid: false,
-          error: `Insufficient funds. Need $${totalCost.toFixed(2)}, have $${currentPlayer.cash.toFixed(2)}`,
-        }
-      }
-      if (quantity > selectedStock.availableQuantity) {
-        return { isValid: false, error: `Only ${selectedStock.availableQuantity} shares available` }
-      }
-    } else if (tradeType === 'sell') {
-      const holding = currentPlayer.portfolio.find((h) => h.symbol === selectedSymbol)
-      if (!holding || holding.quantity < quantity) {
-        return { isValid: false, error: `You only own ${holding?.quantity || 0} shares` }
-      }
-    }
-
-    return { isValid: true, error: null }
-  }
-
-  const validation = getTradeValidation()
+  // Reset quantity when switching trade type or symbol
+  useEffect(() => {
+    setTradeQuantity('')
+  }, [tradeType, selectedSymbol])
 
   const handleTrade = () => {
-    if (validation.isValid) {
-      if (tradeType === 'corporate') {
+    if (tradeType === 'corporate') {
+      if (corporateActionPreview?.isValid) {
         const qty =
           selectedAction?.type === 'right_issue' ? parseInt(rightIssueQuantity) : undefined
-        // Pass stock symbol along with the corporate action
         onPlayCorporateAction(selectedCorporateAction, qty, corporateActionStock)
         setSelectedCorporateAction('')
         setCorporateActionStock('')
         setRightIssueQuantity('')
-      } else if (selectedStock) {
-        onTrade(tradeType, selectedSymbol, quantity)
-        setTradeQuantity('')
       }
+    } else if (tradeValidation?.isValid && selectedStock) {
+      onTrade(tradeType, selectedSymbol, quantity)
+      setTradeQuantity('')
     }
   }
+
+  const maxQuantity = tradeValidation?.maxQuantity || 0
+  const preview = corporateActionPreview?.preview
 
   return (
     <Card>
@@ -152,9 +119,15 @@ export function TradePanel({
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Validation Error Display */}
-        {!validation.isValid && selectedSymbol && tradeQuantity && (
+        {tradeType !== 'corporate' && tradeValidation && !tradeValidation.isValid && (
           <div className="p-3 rounded-lg bg-amber-100 text-amber-800 border border-amber-300">
-            ⚠️ {validation.error}
+            ⚠️ {tradeValidation.error}
+          </div>
+        )}
+
+        {tradeType === 'corporate' && corporateActionPreview && !corporateActionPreview.isValid && (
+          <div className="p-3 rounded-lg bg-amber-100 text-amber-800 border border-amber-300">
+            ⚠️ {corporateActionPreview.error}
           </div>
         )}
 
@@ -218,190 +191,115 @@ export function TradePanel({
               </div>
             </div>
 
-            {selectedAction && (
+            {/* Corporate Action Preview */}
+            {preview && (
               <>
-                {selectedAction.type === 'dividend' &&
-                  corporateActionStock &&
-                  (() => {
-                    const dividendDetails = selectedAction.details as DividendDetails
-                    const dividendPercentage = dividendDetails.dividendPercentage
+                {preview.type === 'dividend' && (
+                  <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200">
+                    <div className="text-xs text-emerald-900 space-y-1">
+                      <div className="font-semibold mb-2">💵 Dividend Preview</div>
+                      <div>• Stock price: ${preview.stockPrice?.toFixed(2) || '0.00'}</div>
+                      <div>• Dividend rate: {preview.dividendPercent?.toFixed(0)}% of stock price</div>
+                      <div>• Per share dividend: ${preview.dividendPerShare?.toFixed(2) || '0.00'}</div>
+                      <div>• Your holdings: {preview.currentHoldings || 0} shares</div>
+                      <div className="font-semibold text-emerald-700 mt-2 pt-2 border-t border-emerald-300">
+                        • Total you'll receive: ${preview.totalDividend?.toFixed(2) || '0.00'}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-                    // Get selected stock and player's holding
-                    const stock = gameState.stocks.find((s) => s.symbol === corporateActionStock)
-                    const holding = currentPlayer.portfolio.find(
-                      (h) => h.symbol === corporateActionStock
-                    )
-
-                    // Calculate dividend amounts
-                    const dividendPerShare = stock ? stock.price * dividendPercentage : 0
-                    const totalDividend = holding ? holding.quantity * dividendPerShare : 0
-                    const dividendPercent = (dividendPercentage * 100).toFixed(0)
-
-                    return (
-                      <div className="space-y-3">
-                        <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200">
-                          <div className="text-xs text-emerald-900 space-y-1">
-                            <div className="font-semibold mb-2">💵 Dividend Preview</div>
-                            <div>• Stock price: ${stock?.price.toFixed(2) || '0.00'}</div>
-                            <div>• Dividend rate: {dividendPercent}% of stock price</div>
-                            <div>• Per share dividend: ${dividendPerShare.toFixed(2)}</div>
-                            <div>• Your holdings: {holding?.quantity || 0} shares</div>
-                            <div className="font-semibold text-emerald-700 mt-2 pt-2 border-t border-emerald-300">
-                              • Total you'll receive: ${totalDividend.toFixed(2)}
-                            </div>
-                          </div>
+                {preview.type === 'right_issue' && (
+                  <>
+                    <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
+                      <div className="text-xs text-amber-900 space-y-1">
+                        <div className="font-semibold mb-2">
+                          Maximum Allowed: {preview.maxAllowed || 0} shares
+                        </div>
+                        <div>
+                          • By holdings: {preview.maxByHoldings || 0} shares (
+                          {preview.currentHoldings || 0} owned, {preview.ratio}:{preview.baseShares}{' '}
+                          ratio)
+                        </div>
+                        <div>• By market availability: {preview.maxByMarket || 0} shares</div>
+                        <div>
+                          • By cash: {preview.maxByCash || 0} shares ($
+                          {currentPlayer.cash.toFixed(2)} available)
                         </div>
                       </div>
-                    )
-                  })()}
+                    </div>
 
-                {selectedAction.type === 'right_issue' &&
-                  corporateActionStock &&
-                  (() => {
-                    const rightIssueDetails = selectedAction.details as RightIssueDetails
-                    const ratio = rightIssueDetails.ratio
-                    const baseShares = rightIssueDetails.baseShares
-                    const discountPercentage = rightIssueDetails.discountPercentage
-
-                    // Get selected stock and player's holding
-                    const stock = gameState.stocks.find((s) => s.symbol === corporateActionStock)
-                    const holding = currentPlayer.portfolio.find(
-                      (h) => h.symbol === corporateActionStock
-                    )
-
-                    // Right issue price uses discount from backend
-                    const pricePerShare = stock ? stock.price * discountPercentage : 0
-                    const discountPercent = ((1 - discountPercentage) * 100).toFixed(0)
-
-                    // Calculate max allowed by holdings (based on right issue ratio)
-                    const maxByHoldings = holding
-                      ? Math.floor(holding.quantity / baseShares) * ratio
-                      : 0
-
-                    // Calculate max allowed by available stock in market
-                    const maxByMarket = stock ? stock.availableQuantity : 0
-
-                    // Calculate max allowed by cash at discounted price
-                    const maxByCash =
-                      pricePerShare > 0 ? Math.floor(currentPlayer.cash / pricePerShare) : 0
-
-                    // Overall max is the minimum of all three
-                    const maxAllowed = Math.min(maxByHoldings, maxByMarket, maxByCash)
-
-                    return (
-                      <div className="space-y-3">
-                        <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
-                          <div className="text-xs text-amber-900 space-y-1">
-                            <div className="font-semibold mb-2">
-                              Maximum Allowed: {maxAllowed} shares
-                            </div>
-                            <div>
-                              • By holdings: {maxByHoldings} shares ({holding?.quantity || 0} owned,{' '}
-                              {ratio}:{baseShares} ratio)
-                            </div>
-                            <div>• By market availability: {maxByMarket} shares</div>
-                            <div>
-                              • By cash: {maxByCash} shares (${currentPlayer.cash.toFixed(2)}{' '}
-                              available)
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="space-y-3">
-                          <div>
-                            <label className="text-sm font-medium">Quantity</label>
-                            <div className="flex gap-2 mt-1">
-                              <Input
-                                type="number"
-                                value={rightIssueQuantity}
-                                onChange={(e) => setRightIssueQuantity(e.target.value)}
-                                placeholder="Enter quantity"
-                                max={maxAllowed}
-                                className="flex-1"
-                              />
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setRightIssueQuantity(maxAllowed.toString())}
-                                disabled={maxAllowed === 0}
-                                className="px-3"
-                              >
-                                Max
-                              </Button>
-                            </div>
-                          </div>
-
-                          {rightIssueQuantity && parseInt(rightIssueQuantity) > 0 && (
-                            <div className="p-2 rounded bg-gray-50 border">
-                              <div className="text-xs">
-                                Price: ${pricePerShare.toFixed(2)} per share ({discountPercent}%
-                                discount)
-                              </div>
-                              <div className="text-xs font-semibold mt-1">
-                                Total: ${(parseInt(rightIssueQuantity) * pricePerShare).toFixed(2)}
-                              </div>
-                            </div>
-                          )}
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-sm font-medium">Quantity</label>
+                        <div className="flex gap-2 mt-1">
+                          <Input
+                            type="number"
+                            value={rightIssueQuantity}
+                            onChange={(e) => setRightIssueQuantity(e.target.value)}
+                            placeholder="Enter quantity"
+                            max={preview.maxAllowed || 0}
+                            className="flex-1"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setRightIssueQuantity((preview.maxAllowed || 0).toString())}
+                            disabled={!preview.maxAllowed || preview.maxAllowed === 0}
+                            className="px-3"
+                          >
+                            Max
+                          </Button>
                         </div>
                       </div>
-                    )
-                  })()}
 
-                {selectedAction.type === 'bonus_issue' &&
-                  corporateActionStock &&
-                  (() => {
-                    const bonusDetails = selectedAction.details as BonusIssueDetails
-                    const ratio = bonusDetails.ratio
-                    const baseShares = bonusDetails.baseShares
-
-                    // Get selected stock and player's holding
-                    const stock = gameState.stocks.find((s) => s.symbol === corporateActionStock)
-                    const holding = currentPlayer.portfolio.find(
-                      (h) => h.symbol === corporateActionStock
-                    )
-
-                    // Calculate bonus shares
-                    const bonusShares = holding
-                      ? Math.floor(holding.quantity / baseShares) * ratio
-                      : 0
-                    const newTotalShares = (holding?.quantity || 0) + bonusShares
-
-                    return (
-                      <div className="space-y-3">
-                        <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
-                          <div className="text-xs text-amber-900 space-y-1">
-                            <div className="font-semibold mb-2">🎁 Bonus Issue Preview</div>
-                            <div>
-                              • Stock: {stock?.name || corporateActionStock} ($
-                              {stock?.price.toFixed(2) || '0.00'})
-                            </div>
-                            <div>
-                              • Bonus ratio: {ratio}:{baseShares} (get {ratio} free share
-                              {ratio > 1 ? 's' : ''} for every {baseShares} you own)
-                            </div>
-                            <div>• Your current holdings: {holding?.quantity || 0} shares</div>
-                            <div className="font-semibold text-amber-700 mt-2 pt-2 border-t border-amber-300">
-                              • Bonus shares you'll receive: {bonusShares} shares
-                            </div>
-                            <div className="font-semibold text-amber-700">
-                              • New total holdings: {newTotalShares} shares
-                            </div>
+                      {rightIssueQuantity && parseInt(rightIssueQuantity) > 0 && (
+                        <div className="p-2 rounded bg-gray-50 border">
+                          <div className="text-xs">
+                            Price: ${preview.pricePerShare?.toFixed(2) || '0.00'} per share (
+                            {preview.discountPercent?.toFixed(0)}% discount)
+                          </div>
+                          <div className="text-xs font-semibold mt-1">
+                            Total: $
+                            {(
+                              parseInt(rightIssueQuantity) * (preview.pricePerShare || 0)
+                            ).toFixed(2)}
                           </div>
                         </div>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                {preview.type === 'bonus_issue' && (
+                  <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
+                    <div className="text-xs text-amber-900 space-y-1">
+                      <div className="font-semibold mb-2">🎁 Bonus Issue Preview</div>
+                      <div>
+                        • Stock: {corporateActionStock} (${preview.stockPrice?.toFixed(2) || '0.00'})
                       </div>
-                    )
-                  })()}
+                      <div>
+                        • Bonus ratio: {preview.ratio}:{preview.baseShares} (get {preview.ratio} free
+                        share{(preview.ratio || 0) > 1 ? 's' : ''} for every {preview.baseShares} you
+                        own)
+                      </div>
+                      <div>• Your current holdings: {preview.currentHoldings || 0} shares</div>
+                      <div className="font-semibold text-amber-700 mt-2 pt-2 border-t border-amber-300">
+                        • Bonus shares you'll receive: {preview.bonusShares || 0} shares
+                      </div>
+                      <div className="font-semibold text-amber-700">
+                        • New total holdings: {preview.newTotalShares || 0} shares
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
                   <div className="text-sm font-semibold text-blue-900 mb-1">
-                    {selectedAction.title}
+                    {selectedAction?.title}
                   </div>
-                  <div className="text-xs text-blue-700">
-                    {selectedAction.type === 'right_issue'
-                      ? `Offer new shares to existing shareholders at $${((selectedAction.details as any).price || 0).toFixed(2)} per share (1:2 ratio)`
-                      : selectedAction.description}
-                  </div>
+                  <div className="text-xs text-blue-700">{selectedAction?.description}</div>
                 </div>
               </>
             )}
@@ -441,11 +339,7 @@ export function TradePanel({
                   onClick={() => setTradeQuantity(maxQuantity.toString())}
                   disabled={maxQuantity === 0}
                   className="px-3"
-                  title={
-                    tradeType === 'buy'
-                      ? `Max: ${maxQuantity} shares (limited by ${Math.floor(currentPlayer.cash / (selectedStock?.price || 1)) < (selectedStock?.availableQuantity || 0) ? 'cash' : 'market availability'})`
-                      : `Max: ${maxQuantity} shares (your holdings)`
-                  }
+                  title={`Max: ${maxQuantity} shares`}
                 >
                   Max
                 </Button>
@@ -455,55 +349,57 @@ export function TradePanel({
         )}
 
         {/* Trade Summary */}
-        {tradeType !== 'corporate' && selectedStock && quantity > 0 && validation.isValid && (
-          <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-blue-700">Price per share:</span>
-                <span className="text-sm font-medium text-blue-900">
-                  ${selectedStock.price.toFixed(2)}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-blue-700">Quantity:</span>
-                <span className="text-sm font-medium text-blue-900">{quantity}</span>
-              </div>
-              <div className="border-t border-blue-200 pt-2">
+        {tradeType !== 'corporate' &&
+          selectedStock &&
+          quantity > 0 &&
+          tradeValidation?.isValid && (
+            <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+              <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-semibold text-blue-900">
-                    {tradeType === 'buy' ? '💳 Amount to Debit:' : '💰 Amount to Credit:'}
+                  <span className="text-sm text-blue-700">Price per share:</span>
+                  <span className="text-sm font-medium text-blue-900">
+                    ${selectedStock.price.toFixed(2)}
                   </span>
-                  <span
-                    className={`text-lg font-bold ${tradeType === 'buy' ? 'text-red-600' : 'text-green-600'}`}
-                  >
-                    {tradeType === 'buy' ? '-' : '+'}${(selectedStock.price * quantity).toFixed(2)}
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-blue-700">Quantity:</span>
+                  <span className="text-sm font-medium text-blue-900">{quantity}</span>
+                </div>
+                <div className="border-t border-blue-200 pt-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-semibold text-blue-900">
+                      {tradeType === 'buy' ? '💳 Amount to Debit:' : '💰 Amount to Credit:'}
+                    </span>
+                    <span
+                      className={`text-lg font-bold ${tradeType === 'buy' ? 'text-red-600' : 'text-green-600'}`}
+                    >
+                      {tradeType === 'buy' ? '-' : '+'}${(selectedStock.price * quantity).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center pt-1">
+                  <span className="text-xs text-blue-600">Cash after trade:</span>
+                  <span className="text-xs font-medium text-blue-800">
+                    $
+                    {(
+                      currentPlayer.cash +
+                      (tradeType === 'buy' ? -1 : 1) * selectedStock.price * quantity
+                    ).toFixed(2)}
                   </span>
                 </div>
               </div>
-              {tradeType === 'buy' && (
-                <div className="flex justify-between items-center pt-1">
-                  <span className="text-xs text-blue-600">Cash after trade:</span>
-                  <span className="text-xs font-medium text-blue-800">
-                    ${(currentPlayer.cash - selectedStock.price * quantity).toFixed(2)}
-                  </span>
-                </div>
-              )}
-              {tradeType === 'sell' && (
-                <div className="flex justify-between items-center pt-1">
-                  <span className="text-xs text-blue-600">Cash after trade:</span>
-                  <span className="text-xs font-medium text-blue-800">
-                    ${(currentPlayer.cash + selectedStock.price * quantity).toFixed(2)}
-                  </span>
-                </div>
-              )}
             </div>
-          </div>
-        )}
+          )}
 
         <div className="flex gap-2">
           <Button
             onClick={handleTrade}
-            disabled={!validation.isValid || gameState.isComplete}
+            disabled={
+              gameState.isComplete ||
+              (tradeType === 'corporate'
+                ? !corporateActionPreview?.isValid
+                : !tradeValidation?.isValid)
+            }
             className="flex-1"
           >
             {tradeType === 'buy'

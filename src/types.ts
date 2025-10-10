@@ -8,6 +8,9 @@ type RouterOutput = inferRouterOutputs<AppRouter>
 export type GameState = RouterOutput['game']['getGameState']
 export type TradeResult = RouterOutput['game']['executeTrade']
 export type EndTurnResult = RouterOutput['game']['endTurn']
+export type PortfolioData = RouterOutput['game']['getPortfolioData']
+export type TradeValidation = RouterOutput['game']['validateTrade']
+export type CorporateActionPreview = RouterOutput['game']['getCorporateActionPreview']
 
 // Extract nested types from GameState
 export type Player = GameState['players'][number]
