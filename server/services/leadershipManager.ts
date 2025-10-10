@@ -1,8 +1,9 @@
 import { PrismaClient } from '@prisma/client'
 import { DIRECTOR_THRESHOLD, CHAIRMAN_THRESHOLD } from '../constants'
 import { calculateLeadership } from '../utils/leadership'
+import { ILeadershipService } from '../interfaces/ILeadershipService'
 
-export class LeadershipManager {
+export class LeadershipManager implements ILeadershipService {
   constructor(private prisma: PrismaClient) {}
 
   /**

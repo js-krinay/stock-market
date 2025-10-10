@@ -5,6 +5,8 @@
  * For corporate action generation, use CorporateActionGenerator service
  */
 
+import type { BonusIssueDetails } from '../types'
+
 export interface ShareholderHolding {
   playerId: string
   playerName: string

@@ -9,8 +9,9 @@ import {
   calculateSaleProfit,
 } from '../utils/trading'
 import { Errors } from '../errors'
+import { ITradeService, TradeResult } from '../interfaces/ITradeService'
 
-export class TradeExecutor {
+export class TradeExecutor implements ITradeService {
   constructor(private prisma: PrismaClient) {}
 
   /**
@@ -20,11 +21,7 @@ export class TradeExecutor {
     gameId: string,
     action: TradeAction,
     onLeadershipUpdate: () => Promise<void>
-  ): Promise<{
-    success: boolean
-    message: string
-    toasts?: Array<{ playerName: string; message: string }>
-  }> {
+  ): Promise<TradeResult> {
     const game = await this.prisma.game.findUnique({
       where: { id: gameId },
       include: {

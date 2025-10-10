@@ -6,6 +6,15 @@ import { TurnManager } from './turnManager'
 import { TradeExecutor } from './tradeExecutor'
 import { LeadershipManager } from './leadershipManager'
 import { DEFAULT_MAX_ROUNDS } from '../constants'
+import type {
+  IGameInitializer,
+  IGameStateService,
+  ITradeService,
+  ITurnService,
+  ILeadershipService,
+  TradeResult,
+  TurnResult,
+} from '../interfaces'
 
 /**
  * GameService - Main orchestrator for game operations
@@ -19,13 +28,14 @@ import { DEFAULT_MAX_ROUNDS } from '../constants'
  *
  * This service now acts as a facade, providing a unified interface
  * while maintaining clean separation of concerns.
+ * Now depends on interfaces instead of concrete implementations.
  */
 export class GameService {
-  private gameInitializer: GameInitializer
-  private gameStateManager: GameStateManager
-  private turnManager: TurnManager
-  private tradeExecutor: TradeExecutor
-  private leadershipManager: LeadershipManager
+  private gameInitializer: IGameInitializer
+  private gameStateManager: IGameStateService
+  private turnManager: ITurnService
+  private tradeExecutor: ITradeService
+  private leadershipManager: ILeadershipService
 
   constructor(prisma: PrismaClient) {
     this.gameInitializer = new GameInitializer(prisma)
@@ -63,14 +73,7 @@ export class GameService {
    * Execute trade
    * Delegates to TradeExecutor with leadership update callback
    */
-  async executeTrade(
-    gameId: string,
-    action: TradeAction
-  ): Promise<{
-    success: boolean
-    message: string
-    toasts?: Array<{ playerName: string; message: string }>
-  }> {
+  async executeTrade(gameId: string, action: TradeAction): Promise<TradeResult> {
     return await this.tradeExecutor.executeTrade(gameId, action, () =>
       this.leadershipManager.updateLeadership(gameId)
     )
@@ -80,7 +83,7 @@ export class GameService {
    * End turn
    * Delegates to TurnManager
    */
-  async endTurn(gameId: string): Promise<{ roundEnded: boolean; gameOver: boolean }> {
+  async endTurn(gameId: string): Promise<TurnResult> {
     return await this.turnManager.endTurn(gameId)
   }
 }

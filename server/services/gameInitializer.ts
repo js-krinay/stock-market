@@ -7,6 +7,7 @@ import {
   MAX_STOCK_QUANTITY,
   INITIAL_STOCKS,
 } from '../constants'
+import { IGameInitializer } from '../interfaces/IGameInitializer'
 
 /**
  * GameInitializer - Handles game creation and initialization
@@ -17,7 +18,7 @@ import {
  * - Set up initial stock market
  * - Generate initial cards
  */
-export class GameInitializer {
+export class GameInitializer implements IGameInitializer {
   private cardManager: CardManager
 
   constructor(private prisma: PrismaClient) {

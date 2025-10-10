@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client'
 import { CardManager } from './cardManager'
 import { RoundProcessor } from './roundProcessor'
 import { Errors } from '../errors'
+import { ITurnService, TurnResult } from '../interfaces/ITurnService'
 
 /**
  * TurnManager - Handles turn progression and round transitions
@@ -12,7 +13,7 @@ import { Errors } from '../errors'
  * - Coordinate round end processing
  * - Expire rights issues based on player turns
  */
-export class TurnManager {
+export class TurnManager implements ITurnService {
   private cardManager: CardManager
   private roundProcessor: RoundProcessor
 
@@ -24,7 +25,7 @@ export class TurnManager {
   /**
    * End current turn and move to next player
    */
-  async endTurn(gameId: string): Promise<{ roundEnded: boolean; gameOver: boolean }> {
+  async endTurn(gameId: string): Promise<TurnResult> {
     const game = await this.prisma.game.findUnique({
       where: { id: gameId },
       include: { players: true },

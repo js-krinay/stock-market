@@ -7,6 +7,7 @@ import {
   mapDbActionToAppAction,
 } from './mappers'
 import { Errors } from '../errors'
+import { IGameStateService } from '../interfaces/IGameStateService'
 
 /**
  * GameStateManager - Handles game state queries and data retrieval
@@ -17,7 +18,7 @@ import { Errors } from '../errors'
  * - Get player rankings
  * - Fetch unplayed corporate actions
  */
-export class GameStateManager {
+export class GameStateManager implements IGameStateService {
   constructor(private prisma: PrismaClient) {}
 
   /**
