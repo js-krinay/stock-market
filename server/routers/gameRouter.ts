@@ -170,7 +170,12 @@ export const gameRouter = router({
     )
     .query(async ({ input, ctx }) => {
       const uiDataService = new UIDataService(ctx.prisma)
-      return await uiDataService.validateTrade(input.gameId, input.type, input.symbol, input.quantity)
+      return await uiDataService.validateTrade(
+        input.gameId,
+        input.type,
+        input.symbol,
+        input.quantity
+      )
     }),
 
   // Get corporate action preview

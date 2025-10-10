@@ -171,7 +171,9 @@ export class UIDataService {
     if (!game) throw new Error('Game not found')
 
     const currentPlayer = game.players[game.currentPlayerIndex]
-    const corporateAction = currentPlayer.corporateActions.find((ca) => ca.actionId === corporateActionId)
+    const corporateAction = currentPlayer.corporateActions.find(
+      (ca) => ca.actionId === corporateActionId
+    )
 
     if (!corporateAction) {
       return {

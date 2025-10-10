@@ -165,7 +165,11 @@ export function FullGameScreen() {
 
         {/* Portfolio */}
         {portfolioData && (
-          <PortfolioTable gameState={gameState} currentPlayer={currentPlayer} portfolio={portfolioData} />
+          <PortfolioTable
+            gameState={gameState}
+            currentPlayer={currentPlayer}
+            portfolio={portfolioData}
+          />
         )}
 
         {/* All Players */}

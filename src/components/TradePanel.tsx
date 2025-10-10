@@ -199,8 +199,12 @@ export function TradePanel({
                     <div className="text-xs text-emerald-900 space-y-1">
                       <div className="font-semibold mb-2">💵 Dividend Preview</div>
                       <div>• Stock price: ${preview.stockPrice?.toFixed(2) || '0.00'}</div>
-                      <div>• Dividend rate: {preview.dividendPercent?.toFixed(0)}% of stock price</div>
-                      <div>• Per share dividend: ${preview.dividendPerShare?.toFixed(2) || '0.00'}</div>
+                      <div>
+                        • Dividend rate: {preview.dividendPercent?.toFixed(0)}% of stock price
+                      </div>
+                      <div>
+                        • Per share dividend: ${preview.dividendPerShare?.toFixed(2) || '0.00'}
+                      </div>
                       <div>• Your holdings: {preview.currentHoldings || 0} shares</div>
                       <div className="font-semibold text-emerald-700 mt-2 pt-2 border-t border-emerald-300">
                         • Total you'll receive: ${preview.totalDividend?.toFixed(2) || '0.00'}
@@ -245,7 +249,9 @@ export function TradePanel({
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => setRightIssueQuantity((preview.maxAllowed || 0).toString())}
+                            onClick={() =>
+                              setRightIssueQuantity((preview.maxAllowed || 0).toString())
+                            }
                             disabled={!preview.maxAllowed || preview.maxAllowed === 0}
                             className="px-3"
                           >
@@ -262,9 +268,9 @@ export function TradePanel({
                           </div>
                           <div className="text-xs font-semibold mt-1">
                             Total: $
-                            {(
-                              parseInt(rightIssueQuantity) * (preview.pricePerShare || 0)
-                            ).toFixed(2)}
+                            {(parseInt(rightIssueQuantity) * (preview.pricePerShare || 0)).toFixed(
+                              2
+                            )}
                           </div>
                         </div>
                       )}
@@ -277,12 +283,13 @@ export function TradePanel({
                     <div className="text-xs text-amber-900 space-y-1">
                       <div className="font-semibold mb-2">🎁 Bonus Issue Preview</div>
                       <div>
-                        • Stock: {corporateActionStock} (${preview.stockPrice?.toFixed(2) || '0.00'})
+                        • Stock: {corporateActionStock} (${preview.stockPrice?.toFixed(2) || '0.00'}
+                        )
                       </div>
                       <div>
-                        • Bonus ratio: {preview.ratio}:{preview.baseShares} (get {preview.ratio} free
-                        share{(preview.ratio || 0) > 1 ? 's' : ''} for every {preview.baseShares} you
-                        own)
+                        • Bonus ratio: {preview.ratio}:{preview.baseShares} (get {preview.ratio}{' '}
+                        free share{(preview.ratio || 0) > 1 ? 's' : ''} for every{' '}
+                        {preview.baseShares} you own)
                       </div>
                       <div>• Your current holdings: {preview.currentHoldings || 0} shares</div>
                       <div className="font-semibold text-amber-700 mt-2 pt-2 border-t border-amber-300">
@@ -349,47 +356,44 @@ export function TradePanel({
         )}
 
         {/* Trade Summary */}
-        {tradeType !== 'corporate' &&
-          selectedStock &&
-          quantity > 0 &&
-          tradeValidation?.isValid && (
-            <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
-              <div className="space-y-2">
+        {tradeType !== 'corporate' && selectedStock && quantity > 0 && tradeValidation?.isValid && (
+          <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-blue-700">Price per share:</span>
+                <span className="text-sm font-medium text-blue-900">
+                  ${selectedStock.price.toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-blue-700">Quantity:</span>
+                <span className="text-sm font-medium text-blue-900">{quantity}</span>
+              </div>
+              <div className="border-t border-blue-200 pt-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-blue-700">Price per share:</span>
-                  <span className="text-sm font-medium text-blue-900">
-                    ${selectedStock.price.toFixed(2)}
+                  <span className="text-sm font-semibold text-blue-900">
+                    {tradeType === 'buy' ? '💳 Amount to Debit:' : '💰 Amount to Credit:'}
                   </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-blue-700">Quantity:</span>
-                  <span className="text-sm font-medium text-blue-900">{quantity}</span>
-                </div>
-                <div className="border-t border-blue-200 pt-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-semibold text-blue-900">
-                      {tradeType === 'buy' ? '💳 Amount to Debit:' : '💰 Amount to Credit:'}
-                    </span>
-                    <span
-                      className={`text-lg font-bold ${tradeType === 'buy' ? 'text-red-600' : 'text-green-600'}`}
-                    >
-                      {tradeType === 'buy' ? '-' : '+'}${(selectedStock.price * quantity).toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex justify-between items-center pt-1">
-                  <span className="text-xs text-blue-600">Cash after trade:</span>
-                  <span className="text-xs font-medium text-blue-800">
-                    $
-                    {(
-                      currentPlayer.cash +
-                      (tradeType === 'buy' ? -1 : 1) * selectedStock.price * quantity
-                    ).toFixed(2)}
+                  <span
+                    className={`text-lg font-bold ${tradeType === 'buy' ? 'text-red-600' : 'text-green-600'}`}
+                  >
+                    {tradeType === 'buy' ? '-' : '+'}${(selectedStock.price * quantity).toFixed(2)}
                   </span>
                 </div>
               </div>
+              <div className="flex justify-between items-center pt-1">
+                <span className="text-xs text-blue-600">Cash after trade:</span>
+                <span className="text-xs font-medium text-blue-800">
+                  $
+                  {(
+                    currentPlayer.cash +
+                    (tradeType === 'buy' ? -1 : 1) * selectedStock.price * quantity
+                  ).toFixed(2)}
+                </span>
+              </div>
             </div>
-          )}
+          </div>
+        )}
 
         <div className="flex gap-2">
           <Button
