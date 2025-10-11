@@ -8,6 +8,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { GameState, Player } from '@/types'
+import { chairmanIcon, directorIcon } from '@/lib/utils'
 
 interface PortfolioHolding {
   symbol: string
@@ -70,13 +71,13 @@ export function PortfolioTable({ gameState, currentPlayer, portfolio }: Portfoli
                     <div className="flex items-center gap-1 text-xs">
                       {isChairman && (
                         <div className="flex items-center gap-1 bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                          <span>🏆</span>
+                          <span>{chairmanIcon}</span>
                           <span className="font-semibold">Chairman</span>
                         </div>
                       )}
                       {isDirector && (
                         <div className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                          <span>👔</span>
+                          <span>{directorIcon}</span>
                           <span className="font-semibold">Director</span>
                         </div>
                       )}

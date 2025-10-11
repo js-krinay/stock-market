@@ -1,5 +1,6 @@
 export * from './IGameInitializer'
 export * from './IGameStateService'
+export * from './ILeadershipExclusionService'
+export * from './ILeadershipService'
 export * from './ITradeService'
 export * from './ITurnService'
-export * from './ILeadershipService'

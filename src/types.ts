@@ -22,4 +22,7 @@ export type CorporateAction = Player['corporateActions'][number]
 export type GameCard = Player['events'][number] | Player['corporateActions'][number]
 
 // Re-export corporate action detail types from server
-export type { DividendDetails, RightIssueDetails, BonusIssueDetails } from '../server/types'
+export type { DividendDetails, RightIssueDetails, BonusIssueDetails } from '../server/types/'
+
+// Re-export leadership types from server interfaces
+export type { LeadershipInfo } from '../server/interfaces/'

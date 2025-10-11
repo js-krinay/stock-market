@@ -1,6 +1,10 @@
+import type { LeadershipInfo } from './ILeadershipExclusionService'
+
 export interface TurnResult {
   roundEnded: boolean
   gameOver: boolean
+  leadershipPhaseRequired?: boolean
+  leaders?: LeadershipInfo[]
 }
 
 /**

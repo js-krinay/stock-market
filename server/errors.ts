@@ -147,6 +147,7 @@ export const Errors = {
   playerNotFound: (playerId: string) => new NotFoundError('Player', playerId),
   stockNotFound: (symbol: string) => new NotFoundError('Stock', symbol),
   corporateActionNotFound: (actionId: string) => new NotFoundError('Corporate Action', actionId),
+  eventNotFound: (eventId: string) => new NotFoundError('Event', eventId),
 
   insufficientCash: (required: number, available: number) =>
     new InsufficientResourceError('cash', required, available),
@@ -174,8 +175,33 @@ export const Errors = {
     new GameStateError('Game is already complete', { gameId }),
   notPlayerTurn: (currentPlayer: string, attemptedPlayer: string) =>
     new GameStateError('Not your turn', { currentPlayer, attemptedPlayer }),
+  eventAlreadyExcluded: (eventId: string) =>
+    new GameStateError('Event already excluded', { eventId }),
+  leadershipPhaseNotActive: () =>
+    new GameStateError('Leadership phase not active'),
+  eventWrongRound: (eventRound: number, currentRound: number) =>
+    new GameStateError(
+      `Event belongs to round ${eventRound}, but current round is ${currentRound}`,
+      { eventRound, currentRound }
+    ),
+
+  notLeaderOfAffectedStock: (playerId: string, stocks: string[]) =>
+    new UnauthorizedError(
+      'exclude event',
+      `Player ${playerId} is not chairman or director of any affected stocks: ${stocks.join(', ')}`
+    ),
+  directorCanOnlyExcludeOwnEvents: (directorId: string, eventPlayerId: string) =>
+    new UnauthorizedError(
+      'exclude event',
+      `Director ${directorId} can only exclude events from their own hand. Event belongs to ${eventPlayerId}`
+    ),
 
   unauthorized: (action: string, reason?: string) => new UnauthorizedError(action, reason),
 
   internal: (message: string, error?: Error) => new InternalError(message, error),
+
+  // Infrastructure errors (use plain Error for non-domain issues)
+  containerAlreadyInitialized: () => new Error('ServiceContainer already initialized'),
+  containerNotInitialized: () =>
+    new Error('ServiceContainer not initialized. Call ServiceContainer.initialize() first.'),
 }

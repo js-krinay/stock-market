@@ -10,6 +10,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { GameState, Stock } from '@/types'
+import { chairmanIcon, directorIcon } from '@/lib/utils'
 
 interface StockMarketTableProps {
   gameState: GameState
@@ -167,13 +168,13 @@ export function StockMarketTable({
                     <div className="flex flex-col gap-1 text-xs">
                       {chairman && (
                         <div className="flex items-center gap-1">
-                          <span className="text-yellow-600 font-semibold">🏆</span>
+                          <span className="text-yellow-600 font-semibold">{chairmanIcon}</span>
                           <span className="text-muted-foreground">{chairman.name}</span>
                         </div>
                       )}
                       {director && (
                         <div className="flex items-center gap-1">
-                          <span className="text-blue-600 font-semibold">👔</span>
+                          <span className="text-blue-600 font-semibold">{directorIcon}</span>
                           <span className="text-muted-foreground">{director.name}</span>
                         </div>
                       )}

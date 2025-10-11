@@ -2,14 +2,10 @@ import { describe, it, expect } from 'vitest'
 import {
   validateBuyTrade,
   validateSellTrade,
-  calculateTradeCost,
   calculateNewAverageCost,
   calculateBuyPortfolioUpdate,
   calculateSellPortfolioUpdate,
   calculateSaleProfit,
-  calculateHoldingValue,
-  calculateUnrealizedProfit,
-  calculateNetWorth,
 } from '../../server/utils/trading'
 
 describe('Trading Calculations', () => {
@@ -68,20 +64,6 @@ describe('Trading Calculations', () => {
       const result = validateSellTrade(10, 0, 50)
       expect(result.isValid).toBe(false)
       expect(result.error).toContain('$0')
-    })
-  })
-
-  describe('calculateTradeCost', () => {
-    it('should calculate total cost correctly', () => {
-      const result = calculateTradeCost(10, 100)
-      expect(result.totalCost).toBe(1000)
-      expect(result.pricePerShare).toBe(100)
-      expect(result.quantity).toBe(10)
-    })
-
-    it('should handle fractional prices', () => {
-      const result = calculateTradeCost(10, 99.99)
-      expect(result.totalCost).toBe(999.9)
     })
   })
 
@@ -149,52 +131,6 @@ describe('Trading Calculations', () => {
     it('should calculate zero profit on breakeven sale', () => {
       const profit = calculateSaleProfit(10, 100, 100)
       expect(profit).toBe(0)
-    })
-  })
-
-  describe('calculateHoldingValue', () => {
-    it('should calculate current value correctly', () => {
-      const value = calculateHoldingValue(10, 100)
-      expect(value).toBe(1000)
-    })
-
-    it('should handle zero shares', () => {
-      const value = calculateHoldingValue(0, 100)
-      expect(value).toBe(0)
-    })
-  })
-
-  describe('calculateUnrealizedProfit', () => {
-    it('should calculate unrealized profit', () => {
-      const profit = calculateUnrealizedProfit(10, 120, 100)
-      expect(profit).toBe(200) // (10 * 120) - (10 * 100) = 200
-    })
-
-    it('should calculate unrealized loss', () => {
-      const profit = calculateUnrealizedProfit(10, 80, 100)
-      expect(profit).toBe(-200)
-    })
-
-    it('should calculate zero for breakeven', () => {
-      const profit = calculateUnrealizedProfit(10, 100, 100)
-      expect(profit).toBe(0)
-    })
-  })
-
-  describe('calculateNetWorth', () => {
-    it('should calculate net worth correctly', () => {
-      const netWorth = calculateNetWorth(5000, 10000)
-      expect(netWorth).toBe(15000)
-    })
-
-    it('should handle zero portfolio', () => {
-      const netWorth = calculateNetWorth(5000, 0)
-      expect(netWorth).toBe(5000)
-    })
-
-    it('should handle zero cash', () => {
-      const netWorth = calculateNetWorth(0, 10000)
-      expect(netWorth).toBe(10000)
     })
   })
 })

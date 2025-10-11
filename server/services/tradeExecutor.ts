@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client'
-import type { TradeAction } from '../types'
+import type { TradeAction } from '../types/'
 import { mapDbActionToAppAction } from './mappers'
 import {
   validateBuyTrade,

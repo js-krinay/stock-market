@@ -1,4 +1,4 @@
-import { MarketEvent } from '../types'
+import { MarketEvent } from '../types/'
 
 /**
  * Service for generating market events

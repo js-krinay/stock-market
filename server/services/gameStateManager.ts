@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client'
-import type { GameState, CorporateAction } from '../types'
+import type { GameState, CorporateAction, LeadershipExclusionStatus } from '../types/'
 import {
   mapDbStockToAppStock,
   mapDbPlayerToAppPlayer,
@@ -45,13 +45,26 @@ export class GameStateManager implements IGameStateService {
             },
           },
         },
-        events: {
-          orderBy: { round: 'asc' },
-        },
       },
     })
 
     if (!game) throw Errors.gameNotFound(gameId)
+
+    // Parse leadershipExclusionStatus if present
+    let leadershipExclusionStatus: LeadershipExclusionStatus | undefined
+    if (game.leadershipExclusionStatus) {
+      leadershipExclusionStatus = JSON.parse(game.leadershipExclusionStatus)
+    }
+
+    // Fetch only completed events (from previous rounds) at database level
+    // Events from the current round should not be visible until the round is complete
+    const completedEvents = await this.prisma.marketEvent.findMany({
+      where: {
+        gameId,
+        round: { lt: game.currentRound },
+      },
+      orderBy: { round: 'asc' },
+    })
 
     return {
       currentRound: game.currentRound,
@@ -61,8 +74,9 @@ export class GameStateManager implements IGameStateService {
       players: game.players.map((p) => mapDbPlayerToAppPlayer(p, game.currentRound)),
       currentPlayerIndex: game.currentPlayerIndex,
       stocks: game.stocks.map((s) => mapDbStockToAppStock(s)),
-      eventHistory: game.events.map((e) => mapDbEventToAppEvent(e)),
+      eventHistory: completedEvents.map((e) => mapDbEventToAppEvent(e)),
       isComplete: game.isComplete,
+      leadershipExclusionStatus,
     }
   }
 

@@ -4,10 +4,11 @@ import type {
   PortfolioHolding,
   TradeValidation,
   CorporateActionPreview,
+  CorporateAction,
   DividendDetails,
   RightIssueDetails,
   BonusIssueDetails,
-} from '../types'
+} from '../types/'
 import { Errors } from '../errors'
 
 export class UIDataService {
@@ -213,6 +214,42 @@ export class UIDataService {
       ...entry,
       rank: index + 1,
     }))
+  }
+
+  /**
+   * Get unplayed corporate actions for current player
+   */
+  async getUnplayedCorporateActions(gameId: string): Promise<CorporateAction[]> {
+    const game = await this.prisma.game.findUnique({
+      where: { id: gameId },
+      include: {
+        players: {
+          include: {
+            corporateActions: true,
+          },
+        },
+      },
+    })
+
+    if (!game) throw Errors.gameNotFound(gameId)
+
+    const currentPlayer = game.players[game.currentPlayerIndex]
+    const unplayedActions = currentPlayer.corporateActions
+      .filter((action) => !action.played)
+      .map((action) => ({
+        id: action.actionId,
+        type: action.type as 'dividend' | 'right_issue' | 'bonus_issue',
+        symbol: action.symbol ?? undefined,
+        title: action.title,
+        description: action.description,
+        details: JSON.parse(action.details),
+        round: action.round,
+        playersProcessed: JSON.parse(action.playersProcessed),
+        playerId: action.playerId,
+        played: action.played,
+      }))
+
+    return unplayedActions
   }
 
   /**

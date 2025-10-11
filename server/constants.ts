@@ -5,7 +5,7 @@
 // Game Settings
 export const DEFAULT_MAX_ROUNDS = 10
 export const DEFAULT_TURNS_PER_ROUND = 3
-export const STARTING_CASH = 10000
+export const STARTING_CASH = 10000000
 
 // Stock Settings
 export const MAX_STOCK_QUANTITY = 200000

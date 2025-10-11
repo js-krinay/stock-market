@@ -1,4 +1,4 @@
-import type { TradeAction } from '../types'
+import type { TradeAction } from '../types/'
 
 export interface TradeResult {
   success: boolean

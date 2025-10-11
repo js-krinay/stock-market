@@ -1,7 +1,6 @@
 import { z } from 'zod'
 import { router, publicProcedure } from '../trpc'
 import { ServiceContainer } from '../container'
-import { Errors } from '../errors'
 
 export const gameRouter = router({
   // Create a new game
@@ -19,13 +18,10 @@ export const gameRouter = router({
     }),
 
   // Get game state
-  getGameState: publicProcedure
-    .input(z.object({ gameId: z.string() }))
-    .query(async ({ input }) => {
-      const gameService = ServiceContainer.getInstance().getGameService()
-      const gameState = await gameService.getGameState(input.gameId)
-      return gameState
-    }),
+  getGameState: publicProcedure.input(z.object({ gameId: z.string() })).query(async ({ input }) => {
+    const gameService = ServiceContainer.getInstance().getGameService()
+    return await gameService.getGameState(input.gameId)
+  }),
 
   // Execute trade
   executeTrade: publicProcedure
@@ -42,18 +38,14 @@ export const gameRouter = router({
     )
     .mutation(async ({ input }) => {
       const gameService = ServiceContainer.getInstance().getGameService()
-      const result = await gameService.executeTrade(input.gameId, input.action)
-      return result
+      return await gameService.executeTrade(input.gameId, input.action)
     }),
 
   // End turn
-  endTurn: publicProcedure
-    .input(z.object({ gameId: z.string() }))
-    .mutation(async ({ input }) => {
-      const gameService = ServiceContainer.getInstance().getGameService()
-      const result = await gameService.endTurn(input.gameId)
-      return result
-    }),
+  endTurn: publicProcedure.input(z.object({ gameId: z.string() })).mutation(async ({ input }) => {
+    const gameService = ServiceContainer.getInstance().getGameService()
+    return await gameService.endTurn(input.gameId)
+  }),
 
   // Get player rankings
   getPlayerRankings: publicProcedure
@@ -63,49 +55,60 @@ export const gameRouter = router({
       return await uiDataService.getPlayerRankings(input.gameId)
     }),
 
+  // Get leadership opportunities grouped by leader (for pagination)
+  getLeadershipOpportunitiesGrouped: publicProcedure
+    .input(z.object({ gameId: z.string() }))
+    .query(async ({ input }) => {
+      const leadershipService = ServiceContainer.getInstance().getLeadershipService()
+      return await leadershipService.getLeadershipOpportunitiesGrouped(input.gameId)
+    }),
+
+  // Exclude event by leader (chairman or director)
+  excludeEvent: publicProcedure
+    .input(
+      z.object({
+        gameId: z.string(),
+        eventId: z.string(),
+        leaderId: z.string(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const leadershipService = ServiceContainer.getInstance().getLeadershipService()
+      await leadershipService.excludeEvent(input.gameId, input.eventId, input.leaderId)
+      return { success: true }
+    }),
+
+  // Advance to next leader in sequence
+  advanceToNextLeader: publicProcedure
+    .input(z.object({ gameId: z.string() }))
+    .mutation(async ({ input }) => {
+      const leadershipService = ServiceContainer.getInstance().getLeadershipService()
+      return await leadershipService.advanceToNextLeader(input.gameId)
+    }),
+
+  // Complete leadership phase and process round
+  completeLeadershipPhase: publicProcedure
+    .input(z.object({ gameId: z.string() }))
+    .mutation(async ({ input }) => {
+      const gameService = ServiceContainer.getInstance().getGameService()
+      await gameService.completeLeadershipPhase(input.gameId)
+      return { success: true }
+    }),
+
   // Get active rights issues for current player
   getActiveRightsIssues: publicProcedure
     .input(z.object({ gameId: z.string() }))
     .query(async ({ input }) => {
       const gameService = ServiceContainer.getInstance().getGameService()
-      const activeRightsIssues = await gameService.getActiveRightsIssues(input.gameId)
-      return activeRightsIssues
+      return await gameService.getActiveRightsIssues(input.gameId)
     }),
 
   // Get unplayed corporate actions
   getUnplayedCorporateActions: publicProcedure
     .input(z.object({ gameId: z.string() }))
-    .query(async ({ input, ctx }) => {
-      const game = await ctx.prisma.game.findUnique({
-        where: { id: input.gameId },
-        include: {
-          players: {
-            include: {
-              corporateActions: true,
-            },
-          },
-        },
-      })
-
-      if (!game) throw Errors.gameNotFound(input.gameId)
-
-      const currentPlayer = game.players[game.currentPlayerIndex]
-      const unplayedActions = currentPlayer.corporateActions
-        .filter((action) => !action.played)
-        .map((action) => ({
-          id: action.actionId,
-          type: action.type,
-          symbol: action.symbol,
-          title: action.title,
-          description: action.description,
-          details: JSON.parse(action.details),
-          round: action.round,
-          playersProcessed: JSON.parse(action.playersProcessed),
-          playerId: action.playerId,
-          played: action.played,
-        }))
-
-      return unplayedActions
+    .query(async ({ input }) => {
+      const uiDataService = ServiceContainer.getInstance().getUIDataService()
+      return await uiDataService.getUnplayedCorporateActions(input.gameId)
     }),
 
   // Get portfolio data with calculations

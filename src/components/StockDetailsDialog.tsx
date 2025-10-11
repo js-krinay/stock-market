@@ -15,6 +15,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts'
+import { chairmanIcon, directorIcon } from '@/lib/utils'
 
 interface StockDetailsDialogProps {
   stock: Stock | null
@@ -147,24 +148,62 @@ export function StockDetailsDialog({ stock, gameState, onClose }: StockDetailsDi
                   const typeEmoji = isPositive ? '📈' : '📉'
                   const impactSign = event.impact > 0 ? '+' : ''
 
+                  // Check if event was excluded
+                  const isExcluded = !!event.excludedBy
+                  const excludedByPlayer = isExcluded
+                    ? gameState.players.find((p) => p.id === event.excludedBy)
+                    : null
+
+                  // Determine leadership role for the excluder
+                  let leadershipRole = 'Leader'
+                  let leadershipIcon = '👤'
+                  if (isExcluded && stock) {
+                    if (stock.chairmanId === event.excludedBy) {
+                      leadershipRole = 'Chairman'
+                      leadershipIcon = chairmanIcon
+                    } else if (stock.directorId === event.excludedBy) {
+                      leadershipRole = 'Director'
+                      leadershipIcon = directorIcon
+                    }
+                  }
+
                   return (
-                    <div key={idx} className={`text-xs border rounded p-2 ${eventColors}`}>
+                    <div
+                      key={idx}
+                      className={`text-xs border rounded p-2 ${eventColors} ${isExcluded ? 'opacity-60' : ''}`}
+                    >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <span>{typeEmoji}</span>
+                            <span>{isExcluded ? '🚫' : typeEmoji}</span>
                             <span className="font-semibold">{event.title}</span>
                             <span className="px-1.5 py-0.5 rounded text-xs bg-black/10">
                               {event.severity}
                             </span>
+                            {isExcluded && (
+                              <span className="px-1.5 py-0.5 rounded text-xs bg-yellow-200 text-yellow-900 font-semibold">
+                                EXCLUDED
+                              </span>
+                            )}
                           </div>
-                          <p className="opacity-90">{event.description}</p>
+                          <p className={isExcluded ? 'opacity-70 line-through' : 'opacity-90'}>
+                            {event.description}
+                          </p>
+                          {isExcluded && excludedByPlayer && (
+                            <p className="mt-1 text-xs font-medium text-yellow-800">
+                              ⚠️ Excluded by {excludedByPlayer.name} ({leadershipIcon}{' '}
+                              {leadershipRole})
+                            </p>
+                          )}
                         </div>
                         <div className="text-right">
                           <p className="text-xs opacity-75">Round {event.round}</p>
-                          <p className="font-semibold">
+                          <p className={`font-semibold ${isExcluded ? 'line-through' : ''}`}>
                             {impactSign}${Math.abs(event.impact).toFixed(2)}
                           </p>
+                          {isExcluded && (
+                            <p className="text-xs font-medium text-gray-600">No Impact</p>
+                          )}
                         </div>
                       </div>
                     </div>

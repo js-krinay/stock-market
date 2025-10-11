@@ -12,15 +12,16 @@ datasource db {
 
 // Main game session
 model Game {
-  id                  String   @id @default(cuid())
-  currentRound        Int      @default(1)
-  maxRounds           Int
-  currentTurnInRound  Int      @default(1)
-  turnsPerRound       Int      @default(3)
-  currentPlayerIndex  Int      @default(0)
-  isComplete          Boolean  @default(false)
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id                        String   @id @default(cuid())
+  currentRound              Int      @default(1)
+  maxRounds                 Int
+  currentTurnInRound        Int      @default(1)
+  turnsPerRound             Int      @default(3)
+  currentPlayerIndex        Int      @default(0)
+  isComplete                Boolean  @default(false)
+  leadershipExclusionStatus String?  // JSON: LeadershipExclusionStatus (only set during leadership phase)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
 
   players                     Player[]
   stocks                      Stock[]

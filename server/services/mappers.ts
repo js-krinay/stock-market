@@ -1,4 +1,4 @@
-import type { Stock, Player, MarketEvent, CorporateAction } from '../types'
+import type { Stock, Player, MarketEvent, CorporateAction } from '../types/'
 
 /**
  * Map database stock to app stock
@@ -64,7 +64,7 @@ export function mapDbPlayerToAppPlayer(player: any, currentRound?: number): Play
  */
 export function mapDbEventToAppEvent(event: any): MarketEvent {
   return {
-    id: event.eventId,
+    id: event.id, // Database UUID, not template eventId
     type: event.type,
     severity: event.severity,
     title: event.title,

@@ -14,7 +14,6 @@ app.use(express.json())
 
 // Initialize service container once at startup
 ServiceContainer.initialize(prisma)
-console.log('✅ ServiceContainer initialized')
 
 // tRPC endpoint
 app.use(
@@ -26,8 +25,10 @@ app.use(
 )
 
 app.listen(port, () => {
-  console.log(`🚀 Server running on http://localhost:${port}`)
-  console.log(`📡 tRPC endpoint: http://localhost:${port}/trpc`)
+  if (process.env.NODE_ENV !== 'test') {
+    console.log(`🚀 Server running on http://localhost:${port}`)
+    console.log(`📡 tRPC endpoint: http://localhost:${port}/trpc`)
+  }
 })
 
 // Graceful shutdown

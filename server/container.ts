@@ -1,6 +1,9 @@
 import { PrismaClient } from '@prisma/client'
 import { GameService } from './services/gameService'
 import { UIDataService } from './services/uiDataService'
+import { LeadershipExclusionService } from './services/leadershipExclusionService'
+import type { ILeadershipExclusionService } from './interfaces/'
+import { Errors } from './errors'
 
 /**
  * ServiceContainer - Dependency injection container with singleton pattern
@@ -23,6 +26,7 @@ export class ServiceContainer {
   // Service instances (lazy initialization)
   private gameServiceInstance: GameService | null = null
   private uiDataServiceInstance: UIDataService | null = null
+  private leadershipServiceInstance: LeadershipExclusionService | null = null
 
   private constructor(private prisma: PrismaClient) {}
 
@@ -32,7 +36,7 @@ export class ServiceContainer {
    */
   static initialize(prisma: PrismaClient): void {
     if (ServiceContainer.instance) {
-      throw new Error('ServiceContainer already initialized')
+      throw Errors.containerAlreadyInitialized()
     }
     ServiceContainer.instance = new ServiceContainer(prisma)
   }
@@ -43,7 +47,7 @@ export class ServiceContainer {
    */
   static getInstance(): ServiceContainer {
     if (!ServiceContainer.instance) {
-      throw new Error('ServiceContainer not initialized. Call ServiceContainer.initialize() first.')
+      throw Errors.containerNotInitialized()
     }
     return ServiceContainer.instance
   }
@@ -69,12 +73,23 @@ export class ServiceContainer {
   }
 
   /**
+   * Get LeadershipExclusionService instance (lazy initialization)
+   */
+  getLeadershipService(): ILeadershipExclusionService {
+    if (!this.leadershipServiceInstance) {
+      this.leadershipServiceInstance = new LeadershipExclusionService(this.prisma)
+    }
+    return this.leadershipServiceInstance
+  }
+
+  /**
    * Reset all service instances (for testing only)
    * @internal
    */
   reset(): void {
     this.gameServiceInstance = null
     this.uiDataServiceInstance = null
+    this.leadershipServiceInstance = null
   }
 
   /**
@@ -85,6 +100,3 @@ export class ServiceContainer {
     ServiceContainer.instance = null
   }
 }
-
-// Export singleton instance getter for convenience
-export const container = ServiceContainer.getInstance

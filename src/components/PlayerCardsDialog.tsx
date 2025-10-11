@@ -1,15 +1,29 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { MarketEvent, CorporateAction } from '@/types'
+import { Badge } from '@/components/ui/badge'
+import { MarketEvent, CorporateAction, GameState } from '@/types'
 
 interface PlayerCardsDialogProps {
   playerName: string
   cards: (MarketEvent | CorporateAction)[]
   isOpen: boolean
   onClose: () => void
+  gameState?: GameState // Optional: for resolving leader names
 }
 
-export function PlayerCardsDialog({ playerName, cards, isOpen, onClose }: PlayerCardsDialogProps) {
+export function PlayerCardsDialog({
+  playerName,
+  cards,
+  isOpen,
+  onClose,
+  gameState,
+}: PlayerCardsDialogProps) {
+  const getLeaderName = (leaderId: string): string => {
+    if (!gameState) return 'Leader'
+    const player = gameState.players.find((p) => p.id === leaderId)
+    return player?.name || 'Unknown Leader'
+  }
+
   const getEventBgColor = (event: MarketEvent) => {
     const isPositive = event.type === 'positive' || event.type === 'bull_run'
 
@@ -75,25 +89,51 @@ export function PlayerCardsDialog({ playerName, cards, isOpen, onClose }: Player
                 </div>
 
                 {isEvent ? (
-                  <div
-                    className={`p-3 ${getEventBgColor(card as MarketEvent)} flex flex-col flex-1`}
-                  >
-                    <div className="font-bold text-base mb-2 line-clamp-2">{card.title}</div>
-                    <div className="text-sm mb-2 line-clamp-4 flex-1">{card.description}</div>
-                    <div className="text-sm font-semibold mt-auto">
-                      Impact: {(card as MarketEvent).impact > 0 ? '+' : ''}
-                      {(card as MarketEvent).type === 'inflation' ||
-                      (card as MarketEvent).type === 'deflation'
-                        ? `${(card as MarketEvent).impact}%`
-                        : `$${(card as MarketEvent).impact}`}
-                    </div>
-                    <div className="text-sm font-semibold opacity-80 mt-1 line-clamp-2">
-                      {(card as MarketEvent).type === 'inflation' ||
-                      (card as MarketEvent).type === 'deflation'
-                        ? 'Affects: Cash'
-                        : `Stocks: ${(card as MarketEvent).affectedStocks.join(', ')}`}
-                    </div>
-                  </div>
+                  (() => {
+                    const event = card as MarketEvent
+                    const isExcluded = !!event.excludedBy
+                    return (
+                      <div
+                        className={`p-3 ${getEventBgColor(event)} flex flex-col flex-1 relative ${
+                          isExcluded ? 'opacity-60 border-2 border-dashed border-gray-400' : ''
+                        }`}
+                      >
+                        {/* Excluded badge */}
+                        {isExcluded && (
+                          <Badge
+                            variant="outline"
+                            className="absolute top-2 right-2 bg-gray-200 text-gray-800 text-xs"
+                          >
+                            🚫 Excluded
+                          </Badge>
+                        )}
+
+                        <div className="font-bold text-base mb-2 line-clamp-2">{card.title}</div>
+                        <div className="text-sm mb-2 line-clamp-4 flex-1">{card.description}</div>
+                        <div className="text-sm font-semibold mt-auto">
+                          Impact: {event.impact > 0 ? '+' : ''}
+                          {event.type === 'inflation' || event.type === 'deflation'
+                            ? `${event.impact}%`
+                            : `$${event.impact}`}
+                        </div>
+                        <div className="text-sm font-semibold opacity-80 mt-1 line-clamp-2">
+                          {event.type === 'inflation' || event.type === 'deflation'
+                            ? 'Affects: Cash'
+                            : `Stocks: ${event.affectedStocks.join(', ')}`}
+                        </div>
+
+                        {/* Exclusion information */}
+                        {isExcluded && event.excludedBy && (
+                          <div className="mt-2 pt-2 border-t border-white border-opacity-30">
+                            <p className="text-xs italic">
+                              Excluded by <strong>{getLeaderName(event.excludedBy)}</strong>
+                            </p>
+                            <p className="text-xs opacity-80">Will not affect stock prices</p>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })()
                 ) : (
                   <div
                     className={`p-3 ${getCorporateActionBgColor((card as CorporateAction).type)} flex flex-col flex-1`}

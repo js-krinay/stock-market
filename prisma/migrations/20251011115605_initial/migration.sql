@@ -7,6 +7,7 @@ CREATE TABLE "Game" (
     "turnsPerRound" INTEGER NOT NULL DEFAULT 3,
     "currentPlayerIndex" INTEGER NOT NULL DEFAULT 0,
     "isComplete" BOOLEAN NOT NULL DEFAULT false,
+    "leadershipExclusionStatus" TEXT,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL
 );

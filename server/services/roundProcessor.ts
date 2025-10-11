@@ -62,6 +62,7 @@ export class RoundProcessor {
 
   /**
    * Process all round events in a single transaction
+   * Filters out events that have been excluded by leaders (chairmen/directors)
    */
   private async processRoundEvents(gameId: string, currentRound: number): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
@@ -73,24 +74,28 @@ export class RoundProcessor {
 
       if (!game) throw Errors.gameNotFound(gameId)
 
-      // Step 2: Load all events for the current round
-      const events = await tx.marketEvent.findMany({
+      // Step 2: Load all events for the current round (including excluded ones)
+      const allEvents = await tx.marketEvent.findMany({
         where: { gameId, round: currentRound },
       })
 
-      if (events.length === 0) return
+      if (allEvents.length === 0) return
 
-      // Step 3: Store pre-round prices for calculating percentage impacts
+      // Step 3: Filter out excluded events (excludedBy !== null)
+      // Excluded events are filtered out and not applied to stock prices
+      const activeEvents = allEvents.filter((event) => !event.excludedBy)
+
+      // Step 5: Store pre-round prices for calculating percentage impacts
       const preRoundPrices: { [symbol: string]: number } = {}
       game.stocks.forEach((stock) => {
         preRoundPrices[stock.symbol] = stock.price
       })
 
-      // Step 4: Separate events (stock vs cash)
+      // Step 6: Separate active events (stock vs cash)
       const stockEvents: any[] = []
       let netCashImpact = 0
 
-      for (const event of events) {
+      for (const event of activeEvents) {
         if (event.type === 'inflation' || event.type === 'deflation') {
           netCashImpact += event.impact
         } else {
@@ -98,10 +103,10 @@ export class RoundProcessor {
         }
       }
 
-      // Step 5: Process stock price impacts
+      // Step 7: Process stock price impacts (only active events)
       await this.processStockImpactsInTransaction(tx, game, stockEvents, preRoundPrices)
 
-      // Step 6: Process cash impacts
+      // Step 8: Process cash impacts
       await this.processCashImpactsInTransaction(
         tx,
         gameId,
@@ -110,7 +115,7 @@ export class RoundProcessor {
         game.currentTurnInRound
       )
 
-      // Step 7: Add price history for all stocks
+      // Step 9: Add price history for all stocks
       const updatedStocks = await tx.stock.findMany({
         where: { gameId },
       })

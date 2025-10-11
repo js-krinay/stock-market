@@ -1,4 +1,4 @@
-import { CorporateAction, DividendDetails, RightIssueDetails, BonusIssueDetails } from '../types'
+import { CorporateAction, DividendDetails, RightIssueDetails, BonusIssueDetails } from '../types/'
 import { RIGHT_ISSUE_DISCOUNT, DIVIDEND_PERCENTAGE } from '../constants'
 
 /**

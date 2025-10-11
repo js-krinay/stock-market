@@ -3,6 +3,10 @@ import { CardManager } from './cardManager'
 import { RoundProcessor } from './roundProcessor'
 import { Errors } from '../errors'
 import { ITurnService, TurnResult } from '../interfaces/ITurnService'
+import type {
+  LeadershipInfo,
+  ILeadershipExclusionService,
+} from '../interfaces/ILeadershipExclusionService'
 
 /**
  * TurnManager - Handles turn progression and round transitions
@@ -11,19 +15,26 @@ import { ITurnService, TurnResult } from '../interfaces/ITurnService'
  * - Manage player turn rotation
  * - Handle turn-to-turn transitions
  * - Coordinate round end processing
+ * - Detect leadership phase (chairman/director exclusion opportunities)
  * - Expire rights issues based on player turns
  */
 export class TurnManager implements ITurnService {
   private cardManager: CardManager
   private roundProcessor: RoundProcessor
+  private leadershipService: ILeadershipExclusionService
 
-  constructor(private prisma: PrismaClient) {
+  constructor(
+    private prisma: PrismaClient,
+    leadershipService: ILeadershipExclusionService
+  ) {
     this.cardManager = new CardManager(prisma)
     this.roundProcessor = new RoundProcessor(prisma)
+    this.leadershipService = leadershipService
   }
 
   /**
    * End current turn and move to next player
+   * Detects leadership phase (chairman/director) before processing round end
    */
   async endTurn(gameId: string): Promise<TurnResult> {
     const game = await this.prisma.game.findUnique({
@@ -45,7 +56,32 @@ export class TurnManager implements ITurnService {
       const nextTurn = game.currentTurnInRound + 1
 
       if (nextTurn > game.turnsPerRound) {
-        // Round complete
+        // Round complete - check for leadership phase (chairman or director)
+        const leaders = await this.getLeadersForRound(gameId)
+
+        if (leaders.length > 0) {
+          // Initialize leadership phase with ordered leader IDs
+          const leaderIds = leaders.map((l) => l.playerId)
+          await this.leadershipService.initializeLeadershipPhase(gameId, leaderIds)
+
+          // Signal leadership phase required, don't process round yet
+          await this.prisma.game.update({
+            where: { id: gameId },
+            data: {
+              currentTurnInRound: nextTurn, // Sentinel: 4 means "leadership phase"
+              currentPlayerIndex: 0,
+            },
+          })
+
+          return {
+            roundEnded: false,
+            gameOver: false,
+            leadershipPhaseRequired: true,
+            leaders,
+          }
+        }
+
+        // No leaders, proceed with normal round processing
         await this.roundProcessor.processEndOfRound(gameId, (gId) =>
           this.cardManager.generateCardsForRound(gId)
         )
@@ -67,6 +103,65 @@ export class TurnManager implements ITurnService {
     }
 
     return { roundEnded: false, gameOver: false }
+  }
+
+  /**
+   * Get all leaders (chairmen and directors) with their stocks for current round
+   * Directors only included when no chairman exists for that stock
+   * @private
+   */
+  private async getLeadersForRound(gameId: string): Promise<LeadershipInfo[]> {
+    const stocks = await this.prisma.stock.findMany({
+      where: {
+        gameId,
+        OR: [{ chairmanId: { not: null } }, { directorId: { not: null } }],
+      },
+      include: {
+        chairman: true,
+        director: true,
+        holdings: true,
+      },
+    })
+
+    if (stocks.length === 0) return []
+
+    // Group stocks by leader (chairman takes priority over director)
+    const leadersMap = new Map<string, LeadershipInfo>()
+
+    for (const stock of stocks) {
+      // Chairman has priority - director only gets rights if no chairman
+      const isChairman = stock.chairmanId && stock.chairman
+      const isDirector = stock.directorId && stock.director && !stock.chairmanId
+
+      if (!isChairman && !isDirector) continue
+
+      const leaderId = isChairman ? stock.chairmanId! : stock.directorId!
+      const leader = isChairman ? stock.chairman! : stock.director!
+      const leaderType = isChairman ? 'chairman' : 'director'
+
+      if (!leadersMap.has(leaderId)) {
+        leadersMap.set(leaderId, {
+          playerId: leaderId,
+          playerName: leader.name,
+          stocks: [],
+        })
+      }
+
+      // Calculate share percentage for display
+      const totalHoldings = stock.holdings.reduce((sum, h) => sum + h.quantity, 0)
+      const leaderHolding = stock.holdings.find((h) => h.playerId === leaderId)
+      const sharePercentage = leaderHolding ? (leaderHolding.quantity / totalHoldings) * 100 : 0
+
+      leadersMap.get(leaderId)!.stocks.push({
+        symbol: stock.symbol,
+        name: stock.name,
+        color: stock.color,
+        leaderType,
+        sharePercentage,
+      })
+    }
+
+    return Array.from(leadersMap.values())
   }
 
   /**

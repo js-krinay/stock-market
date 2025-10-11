@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useGameStore } from '@/store/gameStore'
-import { Stock } from '@/types'
+import { Stock, LeadershipInfo } from '@/types'
 import { GameHeader } from './GameHeader'
 import { StockMarketTable } from './StockMarketTable'
 import { TradePanel } from './TradePanel'
 import { AllPlayersTable } from './AllPlayersTable'
 import { PortfolioTable } from './PortfolioTable'
 import { StockDetailsDialog } from './StockDetailsDialog'
+import { LeadershipExclusionDialog } from './LeadershipExclusionDialog'
 import { toast } from 'sonner'
 import { trpc } from '@/utils/trpc'
 
@@ -18,6 +19,10 @@ export function FullGameScreen() {
 
   const [tradeSymbol, setTradeSymbol] = useState('')
   const [selectedStockDetails, setSelectedStockDetails] = useState<Stock | null>(null)
+  const [leadershipPhase, setLeadershipPhase] = useState<{
+    active: boolean
+    leaders: LeadershipInfo[]
+  } | null>(null)
 
   const { data: gameState, isLoading } = trpc.game.getGameState.useQuery(
     { gameId: gameId! },
@@ -76,6 +81,17 @@ export function FullGameScreen() {
 
   const endTurnMutation = trpc.game.endTurn.useMutation({
     onSuccess: async (result) => {
+      // Check for leadership phase FIRST (before normal round processing)
+      if (result.leadershipPhaseRequired && result.leaders) {
+        setLeadershipPhase({
+          active: true,
+          leaders: result.leaders,
+        })
+        // Don't process round yet - wait for leadership exclusions
+        return
+      }
+
+      // Normal round end processing
       if (result.roundEnded) {
         setProcessingRound(true)
         await new Promise((resolve) => setTimeout(resolve, 2000))
@@ -136,6 +152,36 @@ export function FullGameScreen() {
     })
   }
 
+  const handleLeadershipComplete = async () => {
+    try {
+      setProcessingRound(true)
+
+      // Close dialog first
+      setLeadershipPhase(null)
+
+      // Refetch game state (round should advance after completeLeadershipPhase)
+      await utils.game.getGameState.invalidate()
+      await utils.game.getPortfolioData.invalidate()
+
+      // Wait for UI feedback
+      await new Promise((resolve) => setTimeout(resolve, 2000))
+
+      setProcessingRound(false)
+
+      // Check if game over
+      const updatedState = await utils.game.getGameState.fetch({ gameId: gameId! })
+      if (updatedState?.isComplete) {
+        setView('leaderboard')
+      }
+    } catch (error) {
+      toast.error('Leadership Phase Error', {
+        description: error instanceof Error ? error.message : 'Failed to complete leadership exclusions',
+        duration: 3000,
+      })
+      setProcessingRound(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="container mx-auto space-y-4">
@@ -182,6 +228,15 @@ export function FullGameScreen() {
         gameState={gameState}
         onClose={() => setSelectedStockDetails(null)}
       />
+
+      {/* Leadership Exclusion Dialog */}
+      {leadershipPhase?.active && gameState && (
+        <LeadershipExclusionDialog
+          gameId={gameId!}
+          open={leadershipPhase.active}
+          onComplete={handleLeadershipComplete}
+        />
+      )}
 
       {/* Round Processing Overlay */}
       {isProcessingRound && (

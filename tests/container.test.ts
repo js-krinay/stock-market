@@ -40,7 +40,9 @@ describe('ServiceContainer', () => {
   })
 
   it('should throw if initialized twice', () => {
-    expect(() => ServiceContainer.initialize(prisma)).toThrow('ServiceContainer already initialized')
+    expect(() => ServiceContainer.initialize(prisma)).toThrow(
+      'ServiceContainer already initialized'
+    )
   })
 
   it('should reset all services', () => {

@@ -1,3 +1,9 @@
+/**
+ * Core game entities
+ */
+
+import type { TurnAction } from './actions'
+
 export interface Stock {
   symbol: string
   name: string
@@ -24,16 +30,6 @@ export interface Player {
   actionHistory: TurnAction[]
   events: MarketEvent[] // Event cards assigned to this player for the current round
   corporateActions: CorporateAction[] // Corporate action cards assigned to this player for the current round
-}
-
-export interface TurnAction {
-  round: number
-  turn: number
-  action: TradeAction
-  price?: number
-  totalValue?: number
-  result: string
-  timestamp: number
 }
 
 export interface MarketEvent {
@@ -90,6 +86,14 @@ export interface BonusIssueDetails {
   baseShares: number // e.g., 10 for 1:10 bonus issue
 }
 
+export interface LeadershipExclusionStatus {
+  phase: 'active' | 'completed'
+  currentLeaderIndex: number // 0-based index into leaderIds array
+  totalLeaders: number // Total number of leaders this round
+  leaderIds: string[] // Ordered array of player IDs who are leaders
+  completedLeaderIds: string[] // Track which leaders have completed their selections
+}
+
 export interface GameState {
   currentRound: number
   maxRounds: number
@@ -100,68 +104,5 @@ export interface GameState {
   stocks: Stock[]
   eventHistory: MarketEvent[] // All events throughout the game
   isComplete: boolean // Whether the game has ended
-}
-
-export interface TradeAction {
-  type:
-    | 'buy'
-    | 'sell'
-    | 'skip'
-    | 'play_corporate_action' // User action to play a corporate action card
-    | 'dividend_declared' // Logged when dividend is declared
-    | 'dividend_received' // Logged when player receives dividend
-    | 'bonus_issue_declared' // Logged when bonus issue is declared
-    | 'bonus_received' // Logged when player receives bonus shares
-    | 'right_issue_purchased' // Logged when player purchases right issue
-    | 'deflation_gain' // Logged when player gains from deflation
-    | 'inflation_loss' // Logged when player loses from inflation
-  symbol?: string
-  quantity?: number
-  corporateActionId?: string // For playing corporate action cards
-}
-
-// UI Support Types
-export interface PortfolioHolding {
-  symbol: string
-  quantity: number
-  averageCost: number
-  currentPrice: number
-  totalValue: number
-  profitLoss: number
-  profitLossPercent: number
-}
-
-export interface PortfolioData {
-  cash: number
-  holdings: PortfolioHolding[]
-  totalValue: number
-}
-
-export interface TradeValidation {
-  isValid: boolean
-  error: string | null
-  maxQuantity: number
-}
-
-export interface CorporateActionPreview {
-  isValid: boolean
-  error: string | null
-  preview: {
-    type: 'dividend' | 'right_issue' | 'bonus_issue'
-    stockPrice?: number
-    dividendPerShare?: number
-    totalDividend?: number
-    dividendPercent?: number
-    pricePerShare?: number
-    discountPercent?: number
-    maxByHoldings?: number
-    maxByMarket?: number
-    maxByCash?: number
-    maxAllowed?: number
-    bonusShares?: number
-    newTotalShares?: number
-    currentHoldings?: number
-    ratio?: number
-    baseShares?: number
-  } | null
+  leadershipExclusionStatus?: LeadershipExclusionStatus // Only populated during leadership phase
 }

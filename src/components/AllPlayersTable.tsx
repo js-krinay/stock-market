@@ -85,6 +85,7 @@ export function AllPlayersTable({ gameState, currentPlayer }: AllPlayersTablePro
           cards={[...selectedPlayer.events, ...selectedPlayer.corporateActions]}
           isOpen={!!selectedPlayer}
           onClose={() => setSelectedPlayer(null)}
+          gameState={gameState}
         />
       )}
 

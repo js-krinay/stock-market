@@ -76,17 +76,6 @@ export function validateSellTrade(
 }
 
 /**
- * Calculate total cost of a trade
- */
-export function calculateTradeCost(quantity: number, pricePerShare: number): CostCalculation {
-  return {
-    totalCost: quantity * pricePerShare,
-    pricePerShare,
-    quantity,
-  }
-}
-
-/**
  * Calculate new average cost after buying more shares
  */
 export function calculateNewAverageCost(
@@ -145,43 +134,4 @@ export function calculateSaleProfit(
   const revenue = sellQuantity * sellPrice
   const cost = sellQuantity * averageCost
   return revenue - cost
-}
-
-/**
- * Calculate current value of a holding
- */
-export function calculateHoldingValue(quantity: number, currentPrice: number): number {
-  return quantity * currentPrice
-}
-
-/**
- * Calculate unrealized profit/loss on a holding
- */
-export function calculateUnrealizedProfit(
-  quantity: number,
-  currentPrice: number,
-  averageCost: number
-): number {
-  const currentValue = calculateHoldingValue(quantity, currentPrice)
-  const costBasis = quantity * averageCost
-  return currentValue - costBasis
-}
-
-/**
- * Calculate portfolio total value
- */
-export function calculatePortfolioValue(
-  holdings: Array<{ quantity: number; averageCost: number }>,
-  stockPrices: number[]
-): number {
-  return holdings.reduce((total, holding, index) => {
-    return total + calculateHoldingValue(holding.quantity, stockPrices[index])
-  }, 0)
-}
-
-/**
- * Calculate net worth
- */
-export function calculateNetWorth(cash: number, portfolioValue: number): number {
-  return cash + portfolioValue
 }

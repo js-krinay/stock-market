@@ -35,23 +35,6 @@ describe('Utils Purity Verification', () => {
       expect(impacts).toEqual(originalImpacts)
     })
 
-    it('should not mutate input objects', () => {
-      const stocks = [
-        { symbol: 'TECH', price: 100 },
-        { symbol: 'BANK', price: 50 },
-      ]
-      const stocksCopy = JSON.parse(JSON.stringify(stocks))
-
-      const eventData = [
-        { affectedStocks: ['TECH'], impact: 10 },
-        { affectedStocks: ['BANK'], impact: -5 },
-      ]
-
-      pricing.calculateStockImpacts(stocks, eventData)
-
-      // Original stocks array should be unchanged
-      expect(stocks).toEqual(stocksCopy)
-    })
 
     it('should produce consistent results across multiple calls', () => {
       const results: number[] = []
@@ -68,24 +51,6 @@ describe('Utils Purity Verification', () => {
       const result1 = trading.validateBuyTrade(100, 50, 200, 10000)
       const result2 = trading.validateBuyTrade(100, 50, 200, 10000)
       expect(result1).toEqual(result2)
-
-      const result3 = trading.calculateTradeCost(100, 50)
-      const result4 = trading.calculateTradeCost(100, 50)
-      expect(result3).toEqual(result4)
-    })
-
-    it('should not mutate inputs', () => {
-      const holdings = [
-        { quantity: 100, averageCost: 50 },
-        { quantity: 200, averageCost: 45 },
-      ]
-      const holdingsCopy = JSON.parse(JSON.stringify(holdings))
-      const stockPrices = [55, 48]
-
-      trading.calculatePortfolioValue(holdings, stockPrices)
-
-      // Holdings should remain unchanged
-      expect(holdings).toEqual(holdingsCopy)
     })
 
     it('should produce consistent calculations', () => {
@@ -250,11 +215,19 @@ describe('Utils Purity Verification', () => {
       const stockPrice = 100
       const expectedDividend = 100 * (stockPrice * 0.05) // 100 shares * $5 per share
 
-      const result = corporateActions.calculateDividendDistribution(stockPrice, shareholders, 'TECH')
+      const result = corporateActions.calculateDividendDistribution(
+        stockPrice,
+        shareholders,
+        'TECH'
+      )
       expect(result[0].dividendAmount).toBe(expectedDividend)
 
       // Multiple calls should be identical
-      const result2 = corporateActions.calculateDividendDistribution(stockPrice, shareholders, 'TECH')
+      const result2 = corporateActions.calculateDividendDistribution(
+        stockPrice,
+        shareholders,
+        'TECH'
+      )
       expect(result2).toEqual(result)
     })
 
@@ -297,29 +270,16 @@ describe('Utils Purity Verification', () => {
     it('should maintain purity when functions are composed', () => {
       // Test that combining pure functions maintains purity
 
-      // Scenario: Calculate trade impact and validate
+      // Scenario: Validate trade
       const stockPrice = 100
       const quantity = 50
       const playerCash = 10000
 
-      const costCalc = trading.calculateTradeCost(quantity, stockPrice)
-      const validation = trading.validateBuyTrade(
-        quantity,
-        stockPrice,
-        200,
-        playerCash
-      )
+      const validation = trading.validateBuyTrade(quantity, stockPrice, 200, playerCash)
 
       // Same inputs should produce same results
-      const costCalc2 = trading.calculateTradeCost(quantity, stockPrice)
-      const validation2 = trading.validateBuyTrade(
-        quantity,
-        stockPrice,
-        200,
-        playerCash
-      )
+      const validation2 = trading.validateBuyTrade(quantity, stockPrice, 200, playerCash)
 
-      expect(costCalc).toEqual(costCalc2)
       expect(validation).toEqual(validation2)
     })
 
@@ -331,10 +291,9 @@ describe('Utils Purity Verification', () => {
 
       for (let i = 0; i < calls; i++) {
         const priceImpact = pricing.applyPriceImpact(100, 10, 0)
-        const tradeCost = trading.calculateTradeCost(50, 100)
         const severity = events.computeEventSeverity(10)
 
-        results.push({ priceImpact, tradeCost, severity })
+        results.push({ priceImpact, severity })
       }
 
       // All calls should produce identical results

@@ -1,4 +1,4 @@
-import type { GameState, CorporateAction } from '../types'
+import type { GameState, CorporateAction } from '../types/'
 
 /**
  * Interface for game state query operations

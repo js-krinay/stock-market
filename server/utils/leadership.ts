@@ -130,25 +130,3 @@ export function calculateLeadership(
 
   return { chairmanId, directorId }
 }
-
-/**
- * Check if a player is chairman or director of any stock
- */
-export function isPlayerLeader(
-  playerId: string,
-  stocks: Array<{ chairmanId: string | null; directorId: string | null }>
-): boolean {
-  return stocks.some((stock) => stock.chairmanId === playerId || stock.directorId === playerId)
-}
-
-/**
- * Get stocks where player is chairman or director
- */
-export function getLeadershipStocks(
-  playerId: string,
-  stocks: Array<{ symbol: string; chairmanId: string | null; directorId: string | null }>
-): string[] {
-  return stocks
-    .filter((stock) => stock.chairmanId === playerId || stock.directorId === playerId)
-    .map((stock) => stock.symbol)
-}
