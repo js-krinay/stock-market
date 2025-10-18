@@ -86,6 +86,13 @@ export function SetupScreen() {
           <CardDescription className="text-lg">
             Turn-based stock trading competition
           </CardDescription>
+          <Button
+            variant="link"
+            onClick={() => setView('tutorial')}
+            className="mt-2 text-muted-foreground hover:text-primary"
+          >
+            📖 How to Play
+          </Button>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Mode Selection */}

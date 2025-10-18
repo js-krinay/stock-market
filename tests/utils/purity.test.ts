@@ -35,7 +35,6 @@ describe('Utils Purity Verification', () => {
       expect(impacts).toEqual(originalImpacts)
     })
 
-
     it('should produce consistent results across multiple calls', () => {
       const results: number[] = []
       for (let i = 0; i < 10; i++) {

@@ -4,14 +4,14 @@ import { GameState } from '../types'
 interface GameStore {
   gameId: string | null
   gameState: GameState | null
-  currentView: 'setup' | 'game' | 'leaderboard' | 'player-detail'
+  currentView: 'setup' | 'game' | 'leaderboard' | 'player-detail' | 'tutorial'
   selectedPlayerId: string | null
   isProcessingRound: boolean
 
   // Actions
   setGameId: (gameId: string) => void
   setGameState: (gameState: GameState) => void
-  setView: (view: 'setup' | 'game' | 'leaderboard' | 'player-detail') => void
+  setView: (view: 'setup' | 'game' | 'leaderboard' | 'player-detail' | 'tutorial') => void
   setSelectedPlayer: (playerId: string | null) => void
   setProcessingRound: (isProcessing: boolean) => void
 }

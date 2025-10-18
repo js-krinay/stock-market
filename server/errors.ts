@@ -177,8 +177,7 @@ export const Errors = {
     new GameStateError('Not your turn', { currentPlayer, attemptedPlayer }),
   eventAlreadyExcluded: (eventId: string) =>
     new GameStateError('Event already excluded', { eventId }),
-  leadershipPhaseNotActive: () =>
-    new GameStateError('Leadership phase not active'),
+  leadershipPhaseNotActive: () => new GameStateError('Leadership phase not active'),
   eventWrongRound: (eventRound: number, currentRound: number) =>
     new GameStateError(
       `Event belongs to round ${eventRound}, but current round is ${currentRound}`,

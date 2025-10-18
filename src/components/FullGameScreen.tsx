@@ -175,7 +175,8 @@ export function FullGameScreen() {
       }
     } catch (error) {
       toast.error('Leadership Phase Error', {
-        description: error instanceof Error ? error.message : 'Failed to complete leadership exclusions',
+        description:
+          error instanceof Error ? error.message : 'Failed to complete leadership exclusions',
         duration: 3000,
       })
       setProcessingRound(false)
