@@ -9,6 +9,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useGameStore } from '@/store/gameStore'
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import { trpc } from '@/utils/trpc'
 
 export function Leaderboard() {
@@ -42,6 +43,23 @@ export function Leaderboard() {
     setView('setup')
   }
 
+  const handleBackToGame = () => {
+    if (gameState.currentRound <= gameState.maxRounds) {
+      setView('game')
+    }
+  }
+
+  // Keyboard shortcuts for leaderboard
+  useKeyboardShortcuts({
+    shortcuts: [
+      {
+        key: 'Escape',
+        description: 'Back to game',
+        handler: handleBackToGame,
+      },
+    ],
+  })
+
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="container mx-auto max-w-4xl space-y-4">
@@ -49,9 +67,11 @@ export function Leaderboard() {
           <CardHeader>
             <div className="flex justify-between items-center">
               <CardTitle className="text-3xl">🏆 Leaderboard</CardTitle>
-              <Button variant="outline" onClick={() => setView('game')}>
-                ← Back to Game
-              </Button>
+              {gameState.currentRound <= gameState.maxRounds && (
+                <Button variant="outline" onClick={handleBackToGame}>
+                  ← Back to Game <span className="keyboard-hint ml-2">Esc</span>
+                </Button>
+              )}
             </div>
             <p className="text-muted-foreground">
               Round {gameState.currentRound} of {gameState.maxRounds}

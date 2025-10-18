@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/table'
 import { GameState, Stock } from '@/types'
 import { chairmanIcon, directorIcon } from '@/lib/utils'
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 
 interface StockMarketTableProps {
   gameState: GameState
@@ -27,6 +28,7 @@ export function StockMarketTable({
 }: StockMarketTableProps) {
   const [sortBy, setSortBy] = useState<'symbol' | 'price' | 'change' | 'available'>('symbol')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
+  const [focusedIndex, setFocusedIndex] = useState<number>(-1)
 
   const handleSort = (column: 'symbol' | 'price' | 'change' | 'available') => {
     if (sortBy === column) {
@@ -73,6 +75,98 @@ export function StockMarketTable({
       return sortOrder === 'asc' ? compareValue : -compareValue
     })
   }
+
+  const sortedStocks = getSortedStocks()
+
+  // Reset focused index when stocks change
+  useEffect(() => {
+    setFocusedIndex(-1)
+  }, [sortBy, sortOrder])
+
+  // Keyboard shortcuts for stock table
+  useKeyboardShortcuts({
+    shortcuts: [
+      // Number keys for quick stock selection
+      {
+        key: '1',
+        description: 'Select first stock',
+        handler: () => sortedStocks[0] && onSelectStock(sortedStocks[0].symbol),
+      },
+      {
+        key: '2',
+        description: 'Select second stock',
+        handler: () => sortedStocks[1] && onSelectStock(sortedStocks[1].symbol),
+      },
+      {
+        key: '3',
+        description: 'Select third stock',
+        handler: () => sortedStocks[2] && onSelectStock(sortedStocks[2].symbol),
+      },
+      {
+        key: '4',
+        description: 'Select fourth stock',
+        handler: () => sortedStocks[3] && onSelectStock(sortedStocks[3].symbol),
+      },
+      {
+        key: '5',
+        description: 'Select fifth stock',
+        handler: () => sortedStocks[4] && onSelectStock(sortedStocks[4].symbol),
+      },
+      {
+        key: '6',
+        description: 'Select sixth stock',
+        handler: () => sortedStocks[5] && onSelectStock(sortedStocks[5].symbol),
+      },
+      // Arrow key navigation
+      {
+        key: 'ArrowDown',
+        description: 'Navigate stock list down',
+        handler: () => {
+          const newIndex = Math.min(focusedIndex + 1, sortedStocks.length - 1)
+          setFocusedIndex(newIndex)
+          if (sortedStocks[newIndex]) {
+            onSelectStock(sortedStocks[newIndex].symbol)
+          }
+        },
+      },
+      {
+        key: 'ArrowUp',
+        description: 'Navigate stock list up',
+        handler: () => {
+          const newIndex = Math.max(focusedIndex - 1, 0)
+          setFocusedIndex(newIndex)
+          if (sortedStocks[newIndex]) {
+            onSelectStock(sortedStocks[newIndex].symbol)
+          }
+        },
+      },
+      // Sorting shortcuts
+      {
+        key: 's',
+        shift: true,
+        description: 'Sort by Symbol',
+        handler: () => handleSort('symbol'),
+      },
+      {
+        key: 'p',
+        shift: true,
+        description: 'Sort by Price',
+        handler: () => handleSort('price'),
+      },
+      {
+        key: 'c',
+        shift: true,
+        description: 'Sort by Change',
+        handler: () => handleSort('change'),
+      },
+      {
+        key: 'a',
+        shift: true,
+        description: 'Sort by Available',
+        handler: () => handleSort('available'),
+      },
+    ],
+  })
 
   return (
     <Card>
@@ -124,7 +218,7 @@ export function StockMarketTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {getSortedStocks().map((stock) => {
+            {sortedStocks.map((stock, index) => {
               // Calculate change from last round's price
               const currentRoundIndex = gameState.currentRound - 1
               const lastRoundPrice =
@@ -144,16 +238,25 @@ export function StockMarketTable({
                 ? gameState.players.find((p) => p.id === stock.directorId)
                 : null
 
+              const isSelected = selectedSymbol === stock.symbol
+
               return (
                 <TableRow
                   key={stock.symbol}
-                  className="cursor-pointer hover:bg-muted"
-                  onClick={() => onSelectStock(stock.symbol)}
+                  className={`cursor-pointer hover:bg-muted keyboard-focusable-row ${
+                    isSelected ? 'keyboard-selected-row' : ''
+                  }`}
+                  tabIndex={0}
+                  onClick={() => {
+                    onSelectStock(stock.symbol)
+                    setFocusedIndex(index)
+                  }}
+                  onFocus={() => setFocusedIndex(index)}
                   style={{
-                    backgroundColor:
-                      selectedSymbol === stock.symbol ? stock.color + '40' : undefined,
+                    backgroundColor: isSelected ? stock.color + '40' : undefined,
                     borderLeft: `4px solid ${stock.color}`,
                   }}
+                  data-stock-index={index}
                 >
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">

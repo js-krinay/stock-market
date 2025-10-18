@@ -182,7 +182,7 @@ function Step3StartingCapital() {
 
       <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg p-6 text-center">
         <p className="text-lg text-muted-foreground mb-2">Each player begins with</p>
-        <p className="text-4xl font-bold text-green-600 dark:text-green-400">$900,000</p>
+        <p className="text-4xl font-bold text-green-600 dark:text-green-400">$800,000</p>
       </div>
 
       <div className="mt-6 space-y-3">
@@ -491,13 +491,15 @@ function Step8CorporateActions() {
           <li className="flex items-start gap-2">
             <span className="text-primary">•</span>
             <span>
-              When you play a corporate action card, <strong>you choose which stock</strong> it applies to
+              When you play a corporate action card, <strong>you choose which stock</strong> it
+              applies to
             </span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-primary">•</span>
             <span>
-              The action benefits <strong>all stockholders</strong> of that chosen stock, not just you
+              The action benefits <strong>all stockholders</strong> of that chosen stock, not just
+              you
             </span>
           </li>
           <li className="flex items-start gap-2">

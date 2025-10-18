@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { MarketEvent, CorporateAction, GameState } from '@/types'
+import { useDialogKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 
 interface PlayerCardsDialogProps {
   playerName: string
@@ -18,6 +19,9 @@ export function PlayerCardsDialog({
   onClose,
   gameState,
 }: PlayerCardsDialogProps) {
+  // Add Escape key handler to close dialog
+  useDialogKeyboardShortcuts(onClose, isOpen)
+
   const getLeaderName = (leaderId: string): string => {
     if (!gameState) return 'Leader'
     const player = gameState.players.find((p) => p.id === leaderId)

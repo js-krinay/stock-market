@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { useGameStore } from '@/store/gameStore'
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import { trpc } from '@/utils/trpc'
 import { toast } from 'sonner'
 
@@ -77,6 +78,36 @@ export function SetupScreen() {
       }
     }
   }
+
+  // Keyboard shortcuts for setup screen
+  useKeyboardShortcuts({
+    shortcuts: [
+      {
+        key: '1',
+        ctrl: true,
+        description: 'Switch to Create Game mode',
+        handler: () => setMode('create'),
+      },
+      {
+        key: '2',
+        ctrl: true,
+        description: 'Switch to Join Game mode',
+        handler: () => setMode('join'),
+      },
+      {
+        key: 'Enter',
+        description: 'Start or join game',
+        handler: () => {
+          if (mode === 'create') {
+            handleStartGame()
+          } else {
+            handleJoinGame()
+          }
+        },
+        preventDefault: false, // Allow Enter in input fields
+      },
+    ],
+  })
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">

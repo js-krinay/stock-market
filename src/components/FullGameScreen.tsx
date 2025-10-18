@@ -8,6 +8,7 @@ import { AllPlayersTable } from './AllPlayersTable'
 import { PortfolioTable } from './PortfolioTable'
 import { StockDetailsDialog } from './StockDetailsDialog'
 import { LeadershipExclusionDialog } from './LeadershipExclusionDialog'
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import { toast } from 'sonner'
 import { trpc } from '@/utils/trpc'
 
@@ -106,6 +107,18 @@ export function FullGameScreen() {
         setView('leaderboard')
       }
     },
+  })
+
+  // Global keyboard shortcuts for game screen
+  // Must be called before early return to follow Rules of Hooks
+  useKeyboardShortcuts({
+    shortcuts: [
+      {
+        key: 'l',
+        description: 'Open leaderboard',
+        handler: () => setView('leaderboard'),
+      },
+    ],
   })
 
   // Early return after all hooks

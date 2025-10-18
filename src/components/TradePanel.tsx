@@ -12,6 +12,7 @@ import {
 import { GameState, Player } from '@/types'
 import { trpc } from '@/utils/trpc'
 import { useGameStore } from '@/store/gameStore'
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 
 interface TradePanelProps {
   gameState: GameState
@@ -93,6 +94,13 @@ export function TradePanel({
     setTradeQuantity('')
   }, [tradeType, selectedSymbol])
 
+  // Sync corporate action stock with selected symbol when in corporate mode
+  useEffect(() => {
+    if (tradeType === 'corporate' && selectedSymbol) {
+      setCorporateActionStock(selectedSymbol)
+    }
+  }, [selectedSymbol, tradeType])
+
   const handleTrade = () => {
     if (tradeType === 'corporate') {
       if (corporateActionPreview?.isValid) {
@@ -111,6 +119,55 @@ export function TradePanel({
 
   const maxQuantity = tradeValidation?.maxQuantity || 0
   const preview = corporateActionPreview?.preview
+
+  // Keyboard shortcuts for trade panel
+  useKeyboardShortcuts({
+    shortcuts: [
+      {
+        key: 'b',
+        description: 'Switch to Buy mode',
+        handler: () => setTradeType('buy'),
+      },
+      {
+        key: 's',
+        description: 'Switch to Sell mode',
+        handler: () => setTradeType('sell'),
+      },
+      {
+        key: 'c',
+        description: 'Switch to Corporate action mode',
+        handler: () => setTradeType('corporate'),
+      },
+      {
+        key: 'k',
+        description: 'Skip turn',
+        handler: () => onSkip(),
+      },
+      {
+        key: 'm',
+        description: 'Set quantity to Max',
+        handler: () => {
+          if (tradeType === 'buy' || tradeType === 'sell') {
+            setTradeQuantity(maxQuantity.toString())
+          } else if (tradeType === 'corporate' && selectedAction?.type === 'right_issue') {
+            setRightIssueQuantity((preview?.maxAllowed || 0).toString())
+          }
+        },
+      },
+      {
+        key: 'Enter',
+        description: 'Execute trade',
+        handler: () => {
+          if (
+            tradeType === 'corporate' ? corporateActionPreview?.isValid : tradeValidation?.isValid
+          ) {
+            handleTrade()
+          }
+        },
+        preventDefault: false, // Allow Enter in input fields
+      },
+    ],
+  })
 
   return (
     <Card>
@@ -135,23 +192,23 @@ export function TradePanel({
           <Button
             variant={tradeType === 'buy' ? 'default' : 'outline'}
             onClick={() => setTradeType('buy')}
-            className="flex-1"
+            className={`flex-1 ${tradeType === 'buy' ? 'trade-mode-active' : ''}`}
           >
-            Buy
+            Buy <span className="keyboard-hint ml-2">B</span>
           </Button>
           <Button
             variant={tradeType === 'sell' ? 'default' : 'outline'}
             onClick={() => setTradeType('sell')}
-            className="flex-1"
+            className={`flex-1 ${tradeType === 'sell' ? 'trade-mode-active' : ''}`}
           >
-            Sell
+            Sell <span className="keyboard-hint ml-2">S</span>
           </Button>
           <Button
             variant={tradeType === 'corporate' ? 'default' : 'outline'}
             onClick={() => setTradeType('corporate')}
-            className="flex-1"
+            className={`flex-1 ${tradeType === 'corporate' ? 'trade-mode-active' : ''}`}
           >
-            💼 Corporate
+            💼 Corporate <span className="keyboard-hint ml-2">C</span>
           </Button>
         </div>
 
@@ -410,7 +467,8 @@ export function TradePanel({
               ? 'Buy Stock'
               : tradeType === 'sell'
                 ? 'Sell Stock'
-                : 'Play Corporate Action'}
+                : 'Play Corporate Action'}{' '}
+            <span className="keyboard-hint ml-2">Enter</span>
           </Button>
           <Button
             variant="outline"
@@ -418,7 +476,7 @@ export function TradePanel({
             disabled={gameState.isComplete}
             className="flex-1"
           >
-            Skip Turn
+            Skip Turn <span className="keyboard-hint ml-2">K</span>
           </Button>
         </div>
       </CardContent>

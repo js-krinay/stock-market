@@ -16,6 +16,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { chairmanIcon, directorIcon } from '@/lib/utils'
+import { useDialogKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 
 interface StockDetailsDialogProps {
   stock: Stock | null
@@ -24,6 +25,9 @@ interface StockDetailsDialogProps {
 }
 
 export function StockDetailsDialog({ stock, gameState, onClose }: StockDetailsDialogProps) {
+  // Add Escape key handler to close dialog
+  useDialogKeyboardShortcuts(onClose, !!stock)
+
   if (!stock) return null
 
   return (

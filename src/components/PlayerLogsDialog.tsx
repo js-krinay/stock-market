@@ -8,6 +8,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Player } from '@/types'
+import { useDialogKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 
 interface PlayerLogsDialogProps {
   player: Player | null
@@ -16,6 +17,9 @@ interface PlayerLogsDialogProps {
 }
 
 export function PlayerLogsDialog({ player, isOpen, onClose }: PlayerLogsDialogProps) {
+  // Add Escape key handler to close dialog
+  useDialogKeyboardShortcuts(onClose, isOpen)
+
   if (!player) return null
 
   // Sort actions by most recent first
