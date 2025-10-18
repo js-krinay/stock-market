@@ -1,3 +1,4 @@
+import { randomInt } from 'crypto'
 import { MarketEvent } from '../types/'
 
 /**
@@ -582,7 +583,7 @@ export class EventGenerator {
       }
     })
 
-    const event = weightedEvents[Math.floor(Math.random() * weightedEvents.length)]
+    const event = weightedEvents[randomInt(weightedEvents.length)]
     this.usedEventIds.add(event.id)
 
     return {
@@ -597,12 +598,12 @@ export class EventGenerator {
       return null
     }
     // 5% chance of market crash
-    if (Math.random() > 0.05) {
+    if (randomInt(100) >= 5) {
       return null
     }
     // Pick a random stock for the crash
     const stocks = ['TECH', 'BANK', 'ENRG', 'HLTH', 'FOOD', 'AUTO']
-    const crashStock = stocks[Math.floor(Math.random() * stocks.length)]
+    const crashStock = stocks[randomInt(stocks.length)]
     const stockNames: { [key: string]: string } = {
       TECH: 'Technology',
       BANK: 'Finance',
@@ -629,12 +630,12 @@ export class EventGenerator {
       return null
     }
     // 5% chance of bull run
-    if (Math.random() > 0.05) {
+    if (randomInt(100) >= 5) {
       return null
     }
     // Pick a random stock for the bull run
     const stocks = ['TECH', 'BANK', 'ENRG', 'HLTH', 'FOOD', 'AUTO']
-    const bullStock = stocks[Math.floor(Math.random() * stocks.length)]
+    const bullStock = stocks[randomInt(stocks.length)]
     const stockNames: { [key: string]: string } = {
       TECH: 'Technology',
       BANK: 'Finance',

@@ -1,3 +1,4 @@
+import { randomInt } from 'crypto'
 import { CorporateAction, DividendDetails, RightIssueDetails, BonusIssueDetails } from '../types/'
 import { RIGHT_ISSUE_DISCOUNT, DIVIDEND_PERCENTAGE } from '../constants'
 
@@ -12,7 +13,7 @@ export class CorporateActionGenerator {
       'right_issue',
       'bonus_issue',
     ]
-    const type = actionTypes[Math.floor(Math.random() * actionTypes.length)]
+    const type = actionTypes[randomInt(actionTypes.length)]
 
     const id = `${type}-${currentRound}-${currentTurn}-${Date.now()}`
 

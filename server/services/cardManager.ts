@@ -1,3 +1,4 @@
+import { randomInt } from 'crypto'
 import { PrismaClient } from '@prisma/client'
 import { EventGenerator } from './eventGenerator'
 import { CorporateActionGenerator } from './corporateActionGenerator'
@@ -37,7 +38,7 @@ export class CardManager {
 
       // Shuffle card types using Fisher-Yates algorithm
       for (let i = cardTypes.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1))
+        const j = randomInt(i + 1)
         ;[cardTypes[i], cardTypes[j]] = [cardTypes[j], cardTypes[i]]
       }
 
