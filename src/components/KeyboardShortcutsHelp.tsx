@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Kbd } from '@/components/ui/kbd'
 
 interface KeyboardShortcut {
   keys: string[]
@@ -23,10 +24,6 @@ interface KeyboardShortcutsHelpProps {
   onClose: () => void
 }
 
-const KeyboardKey = ({ keyName }: { keyName: string }) => (
-  <kbd className="keyboard-key">{keyName}</kbd>
-)
-
 const KeyboardShortcutRow = ({ keys, description }: KeyboardShortcut) => (
   <div className="flex items-center justify-between py-2 border-b last:border-b-0">
     <span className="text-sm text-muted-foreground">{description}</span>
@@ -34,7 +31,7 @@ const KeyboardShortcutRow = ({ keys, description }: KeyboardShortcut) => (
       {keys.map((key, index) => (
         <span key={index} className="flex items-center gap-1">
           {index > 0 && <span className="text-xs text-muted-foreground mx-1">+</span>}
-          <KeyboardKey keyName={key} />
+          <Kbd>{key}</Kbd>
         </span>
       ))}
     </div>
@@ -108,8 +105,8 @@ export function KeyboardShortcutsHelp({ open, onClose }: KeyboardShortcutsHelpPr
             ⌨️ Keyboard Shortcuts
           </DialogTitle>
           <DialogDescription>
-            Navigate and control the game using your keyboard. Press <KeyboardKey keyName="?" />{' '}
-            anywhere to toggle this help.
+            Navigate and control the game using your keyboard. Press <Kbd>?</Kbd> anywhere to toggle
+            this help.
           </DialogDescription>
         </DialogHeader>
 

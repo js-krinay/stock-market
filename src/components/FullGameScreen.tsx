@@ -8,6 +8,7 @@ import { AllPlayersTable } from './AllPlayersTable'
 import { PortfolioTable } from './PortfolioTable'
 import { StockDetailsDialog } from './StockDetailsDialog'
 import { LeadershipExclusionDialog } from './LeadershipExclusionDialog'
+import { Spinner } from '@/components/ui/spinner'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import { toast } from 'sonner'
 import { trpc } from '@/utils/trpc'
@@ -126,7 +127,7 @@ export function FullGameScreen() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
+          <Spinner size="lg" className="mx-auto mb-4" />
           <p className="text-lg">Loading game...</p>
         </div>
       </div>
@@ -255,11 +256,11 @@ export function FullGameScreen() {
       {/* Round Processing Overlay */}
       {isProcessingRound && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-8 flex flex-col items-center gap-4 shadow-2xl">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600"></div>
+          <div className="bg-card rounded-lg p-8 flex flex-col items-center gap-4 shadow-2xl">
+            <Spinner size="lg" />
             <div className="text-center">
-              <h3 className="text-xl font-bold text-gray-900">Processing Round End</h3>
-              <p className="text-gray-600 mt-2">Applying all accumulated events...</p>
+              <h3 className="text-xl font-bold">Processing Round End</h3>
+              <p className="text-muted-foreground mt-2">Applying all accumulated events...</p>
             </div>
           </div>
         </div>

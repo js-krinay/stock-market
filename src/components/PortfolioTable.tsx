@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import {
   Table,
   TableBody,
@@ -70,16 +71,16 @@ export function PortfolioTable({ gameState, currentPlayer, portfolio }: Portfoli
                   <TableCell>
                     <div className="flex items-center gap-1 text-xs">
                       {isChairman && (
-                        <div className="flex items-center gap-1 bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                        <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100 gap-1">
                           <span>{chairmanIcon}</span>
-                          <span className="font-semibold">Chairman</span>
-                        </div>
+                          <span>Chairman</span>
+                        </Badge>
                       )}
                       {isDirector && (
-                        <div className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                        <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 gap-1">
                           <span>{directorIcon}</span>
-                          <span className="font-semibold">Director</span>
-                        </div>
+                          <span>Director</span>
+                        </Badge>
                       )}
                       {!isChairman && !isDirector && (
                         <span className="text-muted-foreground">{ownershipPct}%</span>

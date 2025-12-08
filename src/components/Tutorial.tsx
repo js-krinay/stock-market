@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { useGameStore } from '@/store/gameStore'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
@@ -101,18 +102,20 @@ function Step1Welcome() {
         <p className="text-lg text-muted-foreground">A turn-based stock trading competition</p>
       </div>
 
-      <div className="bg-primary/10 border border-primary/20 rounded-lg p-6 mt-6">
-        <h3 className="text-xl font-semibold mb-3 flex items-center gap-2">
+      <Alert variant="highlight" className="mt-6">
+        <AlertTitle className="text-xl flex items-center gap-2">
           <span>🏆</span>
           <span>Objective</span>
-        </h3>
-        <p className="text-lg">
-          Win by accumulating the <strong>highest net worth</strong> by the end of the game.
-        </p>
-        <p className="text-muted-foreground mt-2">
-          Net Worth = Cash on Hand + Total Portfolio Value
-        </p>
-      </div>
+        </AlertTitle>
+        <AlertDescription>
+          <p className="text-lg">
+            Win by accumulating the <strong>highest net worth</strong> by the end of the game.
+          </p>
+          <p className="text-muted-foreground mt-2">
+            Net Worth = Cash on Hand + Total Portfolio Value
+          </p>
+        </AlertDescription>
+      </Alert>
 
       <div className="mt-6 p-4 bg-muted rounded-lg">
         <p className="text-sm text-muted-foreground">
@@ -180,10 +183,12 @@ function Step3StartingCapital() {
         <h2 className="text-2xl font-bold">Starting Capital</h2>
       </div>
 
-      <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg p-6 text-center">
-        <p className="text-lg text-muted-foreground mb-2">Each player begins with</p>
-        <p className="text-4xl font-bold text-green-600 dark:text-green-400">$800,000</p>
-      </div>
+      <Alert variant="success" className="text-center">
+        <AlertDescription>
+          <p className="text-lg text-muted-foreground mb-2">Each player begins with</p>
+          <p className="text-4xl font-bold text-green-600 dark:text-green-400">$800,000</p>
+        </AlertDescription>
+      </Alert>
 
       <div className="mt-6 space-y-3">
         <div className="flex items-start gap-3">
@@ -228,11 +233,11 @@ function Step4TurnActions() {
         <h2 className="text-2xl font-bold">Turn Actions</h2>
       </div>
 
-      <div className="bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800 rounded-lg p-4 mb-4">
-        <p className="font-semibold text-center">
+      <Alert variant="warning" className="mb-4">
+        <AlertDescription className="font-semibold text-center">
           ⚡ Each turn, you choose <strong>ONE</strong> action:
-        </p>
-      </div>
+        </AlertDescription>
+      </Alert>
 
       <div className="space-y-3">
         <div className="bg-card border-2 border-primary/20 rounded-lg p-4">
@@ -287,11 +292,11 @@ function Step5CardsSystem() {
         <h2 className="text-2xl font-bold">Cards System</h2>
       </div>
 
-      <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
-        <p className="text-center">
+      <Alert variant="info" className="mb-4">
+        <AlertDescription className="text-center">
           Each player receives <strong>10 cards</strong> at the start of the game
-        </p>
-      </div>
+        </AlertDescription>
+      </Alert>
 
       <div className="space-y-4">
         <div className="bg-card border rounded-lg p-4">
@@ -391,20 +396,22 @@ function Step6MarketEvents() {
           </div>
         </div>
 
-        <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
-          <h3 className="font-semibold mb-2 flex items-center gap-2">
+        <Alert variant="warning">
+          <AlertTitle className="flex items-center gap-2">
             <span>⚡</span>
             <span>Special Events</span>
-          </h3>
-          <ul className="space-y-1 text-sm text-muted-foreground">
-            <li>
-              📉 <strong>Market Crash</strong>: Severe negative impact on affected stocks
-            </li>
-            <li>
-              📈 <strong>Bull Run</strong>: Major positive impact on affected stocks
-            </li>
-          </ul>
-        </div>
+          </AlertTitle>
+          <AlertDescription>
+            <ul className="space-y-1 text-sm">
+              <li>
+                📉 <strong>Market Crash</strong>: Severe negative impact on affected stocks
+              </li>
+              <li>
+                📈 <strong>Bull Run</strong>: Major positive impact on affected stocks
+              </li>
+            </ul>
+          </AlertDescription>
+        </Alert>
       </div>
     </div>
   )
@@ -418,11 +425,11 @@ function Step7StockPrices() {
         <h2 className="text-2xl font-bold">Stock Prices</h2>
       </div>
 
-      <div className="bg-purple-50 dark:bg-purple-950 border border-purple-200 dark:border-purple-800 rounded-lg p-4 mb-4">
-        <p className="text-center font-semibold">
+      <Alert variant="purple" className="mb-4">
+        <AlertDescription className="text-center font-semibold">
           Stock prices update <strong>at the end of each round</strong>
-        </p>
-      </div>
+        </AlertDescription>
+      </Alert>
 
       <div className="space-y-4">
         <div className="bg-card border rounded-lg p-4">
@@ -482,34 +489,36 @@ function Step8CorporateActions() {
         Corporate actions provide special opportunities to enhance your portfolio.
       </p>
 
-      <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
-        <h3 className="font-semibold mb-2 flex items-center gap-2">
+      <Alert variant="info" className="mb-4">
+        <AlertTitle className="flex items-center gap-2">
           <span>💡</span>
           <span>How Corporate Actions Work</span>
-        </h3>
-        <ul className="space-y-2 text-sm text-muted-foreground">
-          <li className="flex items-start gap-2">
-            <span className="text-primary">•</span>
-            <span>
-              When you play a corporate action card, <strong>you choose which stock</strong> it
-              applies to
-            </span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-primary">•</span>
-            <span>
-              The action benefits <strong>all stockholders</strong> of that chosen stock, not just
-              you
-            </span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-primary">•</span>
-            <span>
-              Strategic tip: Choose stocks where you own the most shares to maximize your benefit!
-            </span>
-          </li>
-        </ul>
-      </div>
+        </AlertTitle>
+        <AlertDescription>
+          <ul className="space-y-2 text-sm">
+            <li className="flex items-start gap-2">
+              <span className="text-primary">•</span>
+              <span>
+                When you play a corporate action card, <strong>you choose which stock</strong> it
+                applies to
+              </span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-primary">•</span>
+              <span>
+                The action benefits <strong>all stockholders</strong> of that chosen stock, not just
+                you
+              </span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-primary">•</span>
+              <span>
+                Strategic tip: Choose stocks where you own the most shares to maximize your benefit!
+              </span>
+            </li>
+          </ul>
+        </AlertDescription>
+      </Alert>
 
       <div className="space-y-3">
         <div className="bg-card border-2 border-green-500/30 rounded-lg p-4">
@@ -589,11 +598,11 @@ function Step9Leadership() {
         <h2 className="text-2xl font-bold">Leadership System</h2>
       </div>
 
-      <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mb-4">
-        <p className="text-center font-semibold">
+      <Alert variant="warning" className="mb-4">
+        <AlertDescription className="text-center font-semibold">
           Own enough shares to become a stock leader and gain event exclusion powers!
-        </p>
-      </div>
+        </AlertDescription>
+      </Alert>
 
       <div className="space-y-4">
         <div className="bg-card border-2 border-yellow-500/50 rounded-lg p-4">
@@ -659,16 +668,18 @@ function Step9Leadership() {
           </ul>
         </div>
 
-        <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
-          <h3 className="font-semibold mb-2 flex items-center gap-2">
+        <Alert variant="highlight">
+          <AlertTitle className="flex items-center gap-2">
             <span>💡</span>
             <span>Strategic Importance</span>
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            Leadership positions give you control over the market. Build large positions in stocks
-            to become a chairman and protect your investments from negative events!
-          </p>
-        </div>
+          </AlertTitle>
+          <AlertDescription>
+            <p className="text-sm">
+              Leadership positions give you control over the market. Build large positions in stocks
+              to become a chairman and protect your investments from negative events!
+            </p>
+          </AlertDescription>
+        </Alert>
       </div>
     </div>
   )
@@ -762,12 +773,14 @@ function Step10PortfolioWinning() {
           </div>
         </div>
 
-        <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 text-center">
-          <p className="font-semibold text-lg">🎮 Ready to Play?</p>
-          <p className="text-sm text-muted-foreground mt-2">
-            Click "Back to Setup" to configure your game and start trading!
-          </p>
-        </div>
+        <Alert variant="highlight" className="text-center">
+          <AlertDescription>
+            <p className="font-semibold text-lg">🎮 Ready to Play?</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Click "Back to Setup" to configure your game and start trading!
+            </p>
+          </AlertDescription>
+        </Alert>
       </div>
     </div>
   )

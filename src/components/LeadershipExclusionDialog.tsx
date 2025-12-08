@@ -9,6 +9,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Spinner } from '@/components/ui/spinner'
 import { trpc } from '@/utils/trpc'
 import { chairmanIcon, directorIcon } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -118,17 +120,15 @@ export function LeadershipExclusionDialog({
 
         <div className="space-y-6">
           {/* Player Banner */}
-          <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
-            <div className="flex items-center gap-3">
-              <div className="text-3xl">👤</div>
-              <div>
-                <h3 className="text-xl font-bold">{currentLeaderGroup.leaderName}'s Turn</h3>
-                <p className="text-sm text-muted-foreground">
-                  You lead: {currentLeaderGroup.opportunities.map((o) => o.stockSymbol).join(', ')}
-                </p>
-              </div>
-            </div>
-          </div>
+          <Alert variant="highlight">
+            <div className="text-3xl">👤</div>
+            <AlertDescription>
+              <h3 className="text-xl font-bold">{currentLeaderGroup.leaderName}'s Turn</h3>
+              <p className="text-sm text-muted-foreground">
+                You lead: {currentLeaderGroup.opportunities.map((o) => o.stockSymbol).join(', ')}
+              </p>
+            </AlertDescription>
+          </Alert>
 
           {/* Instructions */}
           <p className="text-sm text-muted-foreground">
@@ -228,7 +228,7 @@ export function LeadershipExclusionDialog({
             <Button onClick={handleNextLeader} disabled={isProcessing} size="lg">
               {isProcessing ? (
                 <>
-                  <span className="animate-spin mr-2">⏳</span>
+                  <Spinner size="sm" className="mr-2" />
                   Processing...
                 </>
               ) : isLastLeader ? (

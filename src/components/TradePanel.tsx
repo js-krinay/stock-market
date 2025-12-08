@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { GameState, Player } from '@/types'
 import { trpc } from '@/utils/trpc'
 import { useGameStore } from '@/store/gameStore'
@@ -177,15 +178,15 @@ export function TradePanel({
       <CardContent className="space-y-4">
         {/* Validation Error Display */}
         {tradeType !== 'corporate' && tradeValidation && !tradeValidation.isValid && (
-          <div className="p-3 rounded-lg bg-amber-100 text-amber-800 border border-amber-300">
-            ⚠️ {tradeValidation.error}
-          </div>
+          <Alert variant="warning">
+            <AlertDescription>⚠️ {tradeValidation.error}</AlertDescription>
+          </Alert>
         )}
 
         {tradeType === 'corporate' && corporateActionPreview && !corporateActionPreview.isValid && (
-          <div className="p-3 rounded-lg bg-amber-100 text-amber-800 border border-amber-300">
-            ⚠️ {corporateActionPreview.error}
-          </div>
+          <Alert variant="warning">
+            <AlertDescription>⚠️ {corporateActionPreview.error}</AlertDescription>
+          </Alert>
         )}
 
         <div className="flex gap-2">
@@ -252,43 +253,47 @@ export function TradePanel({
             {preview && (
               <>
                 {preview.type === 'dividend' && (
-                  <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200">
-                    <div className="text-xs text-emerald-900 space-y-1">
-                      <div className="font-semibold mb-2">💵 Dividend Preview</div>
-                      <div>• Stock price: ${preview.stockPrice?.toFixed(2) || '0.00'}</div>
-                      <div>
-                        • Dividend rate: {preview.dividendPercent?.toFixed(0)}% of stock price
+                  <Alert variant="success">
+                    <AlertDescription>
+                      <div className="text-xs space-y-1">
+                        <div className="font-semibold mb-2">💵 Dividend Preview</div>
+                        <div>• Stock price: ${preview.stockPrice?.toFixed(2) || '0.00'}</div>
+                        <div>
+                          • Dividend rate: {preview.dividendPercent?.toFixed(0)}% of stock price
+                        </div>
+                        <div>
+                          • Per share dividend: ${preview.dividendPerShare?.toFixed(2) || '0.00'}
+                        </div>
+                        <div>• Your holdings: {preview.currentHoldings || 0} shares</div>
+                        <div className="font-semibold mt-2 pt-2 border-t border-green-300">
+                          • Total you'll receive: ${preview.totalDividend?.toFixed(2) || '0.00'}
+                        </div>
                       </div>
-                      <div>
-                        • Per share dividend: ${preview.dividendPerShare?.toFixed(2) || '0.00'}
-                      </div>
-                      <div>• Your holdings: {preview.currentHoldings || 0} shares</div>
-                      <div className="font-semibold text-emerald-700 mt-2 pt-2 border-t border-emerald-300">
-                        • Total you'll receive: ${preview.totalDividend?.toFixed(2) || '0.00'}
-                      </div>
-                    </div>
-                  </div>
+                    </AlertDescription>
+                  </Alert>
                 )}
 
                 {preview.type === 'right_issue' && (
                   <>
-                    <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
-                      <div className="text-xs text-amber-900 space-y-1">
-                        <div className="font-semibold mb-2">
-                          Maximum Allowed: {preview.maxAllowed || 0} shares
+                    <Alert variant="warning">
+                      <AlertDescription>
+                        <div className="text-xs space-y-1">
+                          <div className="font-semibold mb-2">
+                            Maximum Allowed: {preview.maxAllowed || 0} shares
+                          </div>
+                          <div>
+                            • By holdings: {preview.maxByHoldings || 0} shares (
+                            {preview.currentHoldings || 0} owned, {preview.ratio}:{preview.baseShares}{' '}
+                            ratio)
+                          </div>
+                          <div>• By market availability: {preview.maxByMarket || 0} shares</div>
+                          <div>
+                            • By cash: {preview.maxByCash || 0} shares ($
+                            {currentPlayer.cash.toFixed(2)} available)
+                          </div>
                         </div>
-                        <div>
-                          • By holdings: {preview.maxByHoldings || 0} shares (
-                          {preview.currentHoldings || 0} owned, {preview.ratio}:{preview.baseShares}{' '}
-                          ratio)
-                        </div>
-                        <div>• By market availability: {preview.maxByMarket || 0} shares</div>
-                        <div>
-                          • By cash: {preview.maxByCash || 0} shares ($
-                          {currentPlayer.cash.toFixed(2)} available)
-                        </div>
-                      </div>
-                    </div>
+                      </AlertDescription>
+                    </Alert>
 
                     <div className="space-y-3">
                       <div>
@@ -336,35 +341,37 @@ export function TradePanel({
                 )}
 
                 {preview.type === 'bonus_issue' && (
-                  <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
-                    <div className="text-xs text-amber-900 space-y-1">
-                      <div className="font-semibold mb-2">🎁 Bonus Issue Preview</div>
-                      <div>
-                        • Stock: {corporateActionStock} (${preview.stockPrice?.toFixed(2) || '0.00'}
-                        )
+                  <Alert variant="warning">
+                    <AlertDescription>
+                      <div className="text-xs space-y-1">
+                        <div className="font-semibold mb-2">🎁 Bonus Issue Preview</div>
+                        <div>
+                          • Stock: {corporateActionStock} (${preview.stockPrice?.toFixed(2) || '0.00'}
+                          )
+                        </div>
+                        <div>
+                          • Bonus ratio: {preview.ratio}:{preview.baseShares} (get {preview.ratio}{' '}
+                          free share{(preview.ratio || 0) > 1 ? 's' : ''} for every{' '}
+                          {preview.baseShares} you own)
+                        </div>
+                        <div>• Your current holdings: {preview.currentHoldings || 0} shares</div>
+                        <div className="font-semibold mt-2 pt-2 border-t border-amber-300">
+                          • Bonus shares you'll receive: {preview.bonusShares || 0} shares
+                        </div>
+                        <div className="font-semibold">
+                          • New total holdings: {preview.newTotalShares || 0} shares
+                        </div>
                       </div>
-                      <div>
-                        • Bonus ratio: {preview.ratio}:{preview.baseShares} (get {preview.ratio}{' '}
-                        free share{(preview.ratio || 0) > 1 ? 's' : ''} for every{' '}
-                        {preview.baseShares} you own)
-                      </div>
-                      <div>• Your current holdings: {preview.currentHoldings || 0} shares</div>
-                      <div className="font-semibold text-amber-700 mt-2 pt-2 border-t border-amber-300">
-                        • Bonus shares you'll receive: {preview.bonusShares || 0} shares
-                      </div>
-                      <div className="font-semibold text-amber-700">
-                        • New total holdings: {preview.newTotalShares || 0} shares
-                      </div>
-                    </div>
-                  </div>
+                    </AlertDescription>
+                  </Alert>
                 )}
 
-                <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
-                  <div className="text-sm font-semibold text-blue-900 mb-1">
-                    {selectedAction?.title}
-                  </div>
-                  <div className="text-xs text-blue-700">{selectedAction?.description}</div>
-                </div>
+                <Alert variant="info">
+                  <AlertDescription>
+                    <div className="text-sm font-semibold mb-1">{selectedAction?.title}</div>
+                    <div className="text-xs">{selectedAction?.description}</div>
+                  </AlertDescription>
+                </Alert>
               </>
             )}
           </div>
@@ -414,42 +421,42 @@ export function TradePanel({
 
         {/* Trade Summary */}
         {tradeType !== 'corporate' && selectedStock && quantity > 0 && tradeValidation?.isValid && (
-          <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-blue-700">Price per share:</span>
-                <span className="text-sm font-medium text-blue-900">
-                  ${selectedStock.price.toFixed(2)}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-blue-700">Quantity:</span>
-                <span className="text-sm font-medium text-blue-900">{quantity}</span>
-              </div>
-              <div className="border-t border-blue-200 pt-2">
+          <Alert variant="info">
+            <AlertDescription>
+              <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-semibold text-blue-900">
-                    {tradeType === 'buy' ? '💳 Amount to Debit:' : '💰 Amount to Credit:'}
-                  </span>
-                  <span
-                    className={`text-lg font-bold ${tradeType === 'buy' ? 'text-red-600' : 'text-green-600'}`}
-                  >
-                    {tradeType === 'buy' ? '-' : '+'}${(selectedStock.price * quantity).toFixed(2)}
+                  <span className="text-sm">Price per share:</span>
+                  <span className="text-sm font-medium">${selectedStock.price.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Quantity:</span>
+                  <span className="text-sm font-medium">{quantity}</span>
+                </div>
+                <div className="border-t border-blue-200 dark:border-blue-700 pt-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-semibold">
+                      {tradeType === 'buy' ? '💳 Amount to Debit:' : '💰 Amount to Credit:'}
+                    </span>
+                    <span
+                      className={`text-lg font-bold ${tradeType === 'buy' ? 'text-red-600' : 'text-green-600'}`}
+                    >
+                      {tradeType === 'buy' ? '-' : '+'}${(selectedStock.price * quantity).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center pt-1">
+                  <span className="text-xs">Cash after trade:</span>
+                  <span className="text-xs font-medium">
+                    $
+                    {(
+                      currentPlayer.cash +
+                      (tradeType === 'buy' ? -1 : 1) * selectedStock.price * quantity
+                    ).toFixed(2)}
                   </span>
                 </div>
               </div>
-              <div className="flex justify-between items-center pt-1">
-                <span className="text-xs text-blue-600">Cash after trade:</span>
-                <span className="text-xs font-medium text-blue-800">
-                  $
-                  {(
-                    currentPlayer.cash +
-                    (tradeType === 'buy' ? -1 : 1) * selectedStock.price * quantity
-                  ).toFixed(2)}
-                </span>
-              </div>
-            </div>
-          </div>
+            </AlertDescription>
+          </Alert>
         )}
 
         <div className="flex gap-2">

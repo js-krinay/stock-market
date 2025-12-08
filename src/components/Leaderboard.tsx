@@ -8,6 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Spinner } from '@/components/ui/spinner'
 import { useGameStore } from '@/store/gameStore'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import { trpc } from '@/utils/trpc'
@@ -31,7 +32,7 @@ export function Leaderboard() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
+          <Spinner size="lg" className="mx-auto mb-4" />
           <p className="text-lg">Loading leaderboard...</p>
         </div>
       </div>
@@ -90,17 +91,21 @@ export function Leaderboard() {
               </TableHeader>
               <TableBody>
                 {rankings.map((entry) => {
-                  const bgColor =
-                    entry.rank === 1
-                      ? 'bg-yellow-100'
-                      : entry.rank === 2
-                        ? 'bg-gray-100'
-                        : entry.rank === 3
-                          ? 'bg-orange-100'
-                          : ''
+                  const getRankingRowClass = (rank: number) => {
+                    switch (rank) {
+                      case 1:
+                        return 'bg-yellow-100 dark:bg-yellow-900/30'
+                      case 2:
+                        return 'bg-gray-100 dark:bg-gray-800/50'
+                      case 3:
+                        return 'bg-orange-100 dark:bg-orange-900/30'
+                      default:
+                        return ''
+                    }
+                  }
 
                   return (
-                    <TableRow key={entry.player.id} className={bgColor}>
+                    <TableRow key={entry.player.id} className={getRankingRowClass(entry.rank)}>
                       <TableCell className="text-2xl font-bold">
                         {entry.rank === 1 && '🥇'}
                         {entry.rank === 2 && '🥈'}

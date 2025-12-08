@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { MarketEvent, CorporateAction, GameState } from '@/types'
 import { useDialogKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
+import { getEventCardBgClasses, getCorporateActionClasses } from '@/lib/event-styles'
+import type { EventType, EventSeverity, CorporateActionType } from '@/lib/event-styles'
 
 interface PlayerCardsDialogProps {
   playerName: string
@@ -28,50 +30,6 @@ export function PlayerCardsDialog({
     return player?.name || 'Unknown Leader'
   }
 
-  const getEventBgColor = (event: MarketEvent) => {
-    const isPositive = event.type === 'positive' || event.type === 'bull_run'
-
-    if (isPositive) {
-      switch (event.severity) {
-        case 'low':
-          return 'bg-green-400 text-green-900'
-        case 'medium':
-          return 'bg-green-500 text-white'
-        case 'high':
-          return 'bg-green-600 text-white'
-        case 'extreme':
-          return 'bg-green-800 text-white'
-        default:
-          return 'bg-green-600 text-white'
-      }
-    } else {
-      switch (event.severity) {
-        case 'low':
-          return 'bg-red-400 text-red-900'
-        case 'medium':
-          return 'bg-red-500 text-white'
-        case 'high':
-          return 'bg-red-600 text-white'
-        case 'extreme':
-          return 'bg-red-800 text-white'
-        default:
-          return 'bg-red-600 text-white'
-      }
-    }
-  }
-
-  const getCorporateActionBgColor = (type: string) => {
-    switch (type) {
-      case 'dividend':
-        return 'bg-blue-600 text-white'
-      case 'right_issue':
-        return 'bg-purple-600 text-white'
-      case 'bonus_issue':
-        return 'bg-yellow-600 text-white'
-      default:
-        return 'bg-gray-600 text-white'
-    }
-  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -98,7 +56,7 @@ export function PlayerCardsDialog({
                     const isExcluded = !!event.excludedBy
                     return (
                       <div
-                        className={`p-3 ${getEventBgColor(event)} flex flex-col flex-1 relative ${
+                        className={`p-3 ${getEventCardBgClasses(event.type as EventType, event.severity as EventSeverity)} flex flex-col flex-1 relative ${
                           isExcluded ? 'opacity-60 border-2 border-dashed border-gray-400' : ''
                         }`}
                       >
@@ -140,7 +98,7 @@ export function PlayerCardsDialog({
                   })()
                 ) : (
                   <div
-                    className={`p-3 ${getCorporateActionBgColor((card as CorporateAction).type)} flex flex-col flex-1`}
+                    className={`p-3 ${getCorporateActionClasses((card as CorporateAction).type as CorporateActionType)} flex flex-col flex-1`}
                   >
                     <div className="font-bold text-base mb-2 line-clamp-2">{card.title}</div>
                     <div className="text-sm mb-2 line-clamp-4 flex-1">{card.description}</div>

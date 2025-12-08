@@ -16,6 +16,8 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { chairmanIcon, directorIcon } from '@/lib/utils'
+import { getEventCardClasses, getEventEmoji } from '@/lib/event-styles'
+import type { EventType, EventSeverity } from '@/lib/event-styles'
 import { useDialogKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 
 interface StockDetailsDialogProps {
@@ -116,44 +118,14 @@ export function StockDetailsDialog({ stock, gameState, onClose }: StockDetailsDi
                     event.round <= gameState.currentRound
                 )
                 .map((event, idx) => {
-                  const isPositive = event.type === 'positive' || event.type === 'bull_run'
-
-                  const getEventColors = () => {
-                    if (isPositive) {
-                      switch (event.severity) {
-                        case 'low':
-                          return 'bg-green-100 text-green-800 border-green-200'
-                        case 'medium':
-                          return 'bg-green-200 text-green-900 border-green-300'
-                        case 'high':
-                          return 'bg-green-600 text-white border-green-700'
-                        case 'extreme':
-                          return 'bg-green-800 text-white border-green-900'
-                        default:
-                          return 'bg-green-100 text-green-800 border-green-200'
-                      }
-                    } else {
-                      switch (event.severity) {
-                        case 'low':
-                          return 'bg-red-100 text-red-800 border-red-200'
-                        case 'medium':
-                          return 'bg-red-200 text-red-900 border-red-300'
-                        case 'high':
-                          return 'bg-red-600 text-white border-red-700'
-                        case 'extreme':
-                          return 'bg-red-800 text-white border-red-900'
-                        default:
-                          return 'bg-red-100 text-red-800 border-red-200'
-                      }
-                    }
-                  }
-
-                  const eventColors = getEventColors()
-                  const typeEmoji = isPositive ? '📈' : '📉'
+                  const isExcluded = !!event.excludedBy
+                  const eventColors = getEventCardClasses(
+                    event.type as EventType,
+                    event.severity as EventSeverity
+                  )
+                  const typeEmoji = getEventEmoji(event.type as EventType, isExcluded)
                   const impactSign = event.impact > 0 ? '+' : ''
 
-                  // Check if event was excluded
-                  const isExcluded = !!event.excludedBy
                   const excludedByPlayer = isExcluded
                     ? gameState.players.find((p) => p.id === event.excludedBy)
                     : null
