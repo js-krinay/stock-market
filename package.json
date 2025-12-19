@@ -3,22 +3,19 @@
   "version": "1.0.0",
   "description": "A turn-based stock market trading game",
   "type": "module",
-  "packageManager": "pnpm@10.17.1",
   "engines": {
     "node": ">=20.0.0"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@prisma/client",
-      "@prisma/engines",
-      "esbuild",
-      "prisma"
-    ]
-  },
+  "trustedDependencies": [
+    "@prisma/client",
+    "@prisma/engines",
+    "esbuild",
+    "prisma"
+  ],
   "scripts": {
     "dev": "vite",
     "dev:server": "tsx watch server/index.ts",
-    "dev:all": "concurrently \"pnpm run dev:server\" \"pnpm run dev\"",
+    "dev:all": "concurrently \"bun run dev:server\" \"bun run dev\"",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",

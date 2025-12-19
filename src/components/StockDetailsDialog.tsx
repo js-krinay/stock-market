@@ -71,7 +71,7 @@ export function StockDetailsDialog({ stock, gameState, onClose }: StockDetailsDi
                   domain={['auto', 'auto']}
                 />
                 <Tooltip
-                  formatter={(value: number) => [`$${value.toFixed(2)}`, 'Price']}
+                  formatter={(value) => [`$${Number(value).toFixed(2)}`, 'Price']}
                   labelFormatter={(label) => `Round ${label}`}
                 />
                 <Line

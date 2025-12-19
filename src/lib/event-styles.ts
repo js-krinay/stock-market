@@ -4,17 +4,21 @@
  */
 
 export type EventSeverity = 'low' | 'medium' | 'high' | 'extreme'
-export type EventType = 'positive' | 'negative' | 'neutral' | 'crash' | 'bull_run' | 'inflation' | 'deflation'
+export type EventType =
+  | 'positive'
+  | 'negative'
+  | 'neutral'
+  | 'crash'
+  | 'bull_run'
+  | 'inflation'
+  | 'deflation'
 export type CorporateActionType = 'dividend' | 'right_issue' | 'bonus_issue'
 
 /**
  * Get Tailwind classes for event cards based on type and severity
  * Used in StockDetailsDialog for event history cards
  */
-export function getEventCardClasses(
-  type: EventType,
-  severity: EventSeverity
-): string {
+export function getEventCardClasses(type: EventType, severity: EventSeverity): string {
   const isPositive = type === 'positive' || type === 'bull_run'
 
   if (isPositive) {
@@ -50,10 +54,7 @@ export function getEventCardClasses(
  * Get Tailwind classes for event card backgrounds (more saturated for card view)
  * Used in PlayerCardsDialog for the card gallery
  */
-export function getEventCardBgClasses(
-  type: EventType,
-  severity: EventSeverity
-): string {
+export function getEventCardBgClasses(type: EventType, severity: EventSeverity): string {
   const isPositive = type === 'positive' || type === 'bull_run'
 
   if (isPositive) {

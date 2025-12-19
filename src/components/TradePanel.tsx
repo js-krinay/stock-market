@@ -283,8 +283,8 @@ export function TradePanel({
                           </div>
                           <div>
                             • By holdings: {preview.maxByHoldings || 0} shares (
-                            {preview.currentHoldings || 0} owned, {preview.ratio}:{preview.baseShares}{' '}
-                            ratio)
+                            {preview.currentHoldings || 0} owned, {preview.ratio}:
+                            {preview.baseShares} ratio)
                           </div>
                           <div>• By market availability: {preview.maxByMarket || 0} shares</div>
                           <div>
@@ -346,8 +346,8 @@ export function TradePanel({
                       <div className="text-xs space-y-1">
                         <div className="font-semibold mb-2">🎁 Bonus Issue Preview</div>
                         <div>
-                          • Stock: {corporateActionStock} (${preview.stockPrice?.toFixed(2) || '0.00'}
-                          )
+                          • Stock: {corporateActionStock} ($
+                          {preview.stockPrice?.toFixed(2) || '0.00'})
                         </div>
                         <div>
                           • Bonus ratio: {preview.ratio}:{preview.baseShares} (get {preview.ratio}{' '}
@@ -440,7 +440,8 @@ export function TradePanel({
                     <span
                       className={`text-lg font-bold ${tradeType === 'buy' ? 'text-red-600' : 'text-green-600'}`}
                     >
-                      {tradeType === 'buy' ? '-' : '+'}${(selectedStock.price * quantity).toFixed(2)}
+                      {tradeType === 'buy' ? '-' : '+'}$
+                      {(selectedStock.price * quantity).toFixed(2)}
                     </span>
                   </div>
                 </div>

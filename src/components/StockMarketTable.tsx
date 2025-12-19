@@ -200,164 +200,164 @@ export function StockMarketTable({
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead
-                className="cursor-pointer hover:bg-muted"
-                onClick={() => handleSort('symbol')}
-              >
-                <div className="flex items-center gap-1">
-                  Symbol
-                  {sortBy === 'symbol' && <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>}
-                </div>
-              </TableHead>
-              <TableHead>Leadership</TableHead>
-              <TableHead
-                className="cursor-pointer hover:bg-muted"
-                onClick={() => handleSort('price')}
-              >
-                <div className="flex items-center gap-1">
-                  Price
-                  {sortBy === 'price' && <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>}
-                </div>
-              </TableHead>
-              <TableHead
-                className="cursor-pointer hover:bg-muted"
-                onClick={() => handleSort('change')}
-              >
-                <div className="flex items-center gap-1">
-                  Change
-                  {sortBy === 'change' && <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>}
-                </div>
-              </TableHead>
-              <TableHead
-                className="cursor-pointer hover:bg-muted"
-                onClick={() => handleSort('available')}
-              >
-                <div className="flex items-center gap-1">
-                  Available
-                  {sortBy === 'available' && <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>}
-                </div>
-              </TableHead>
-              <TableHead>Details</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedStocks.map((stock, index) => {
-              // Calculate change from last round's price
-              const currentRoundIndex = gameState.currentRound - 1
-              const lastRoundPrice =
-                currentRoundIndex > 0 && stock.priceHistory[currentRoundIndex - 1]
-                  ? stock.priceHistory[currentRoundIndex - 1].price
-                  : stock.priceHistory[0].price
-
-              const priceChange = stock.price - lastRoundPrice
-              const priceChangePercent =
-                lastRoundPrice !== 0 ? (priceChange / lastRoundPrice) * 100 : 0
-
-              // Get leadership info for this stock
-              const chairman = stock.chairmanId
-                ? gameState.players.find((p) => p.id === stock.chairmanId)
-                : null
-              const director = stock.directorId
-                ? gameState.players.find((p) => p.id === stock.directorId)
-                : null
-
-              const isSelected = selectedSymbol === stock.symbol
-
-              return (
-                <TableRow
-                  key={stock.symbol}
-                  className={`cursor-pointer hover:bg-muted keyboard-focusable-row ${
-                    isSelected ? 'keyboard-selected-row' : ''
-                  }`}
-                  tabIndex={0}
-                  onClick={() => {
-                    onSelectStock(stock.symbol)
-                    setFocusedIndex(index)
-                  }}
-                  onFocus={() => setFocusedIndex(index)}
-                  style={{
-                    backgroundColor: isSelected ? stock.color + '40' : undefined,
-                    borderLeft: `4px solid ${stock.color}`,
-                  }}
-                  data-stock-index={index}
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead
+                  className="cursor-pointer hover:bg-muted"
+                  onClick={() => handleSort('symbol')}
                 >
-                  <TableCell className="font-medium">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: stock.color }}
-                      />
-                      {stock.symbol}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col gap-1 text-xs">
-                      {chairman && (
-                        <div className="flex items-center gap-1">
-                          <span className="text-yellow-600 font-semibold">{chairmanIcon}</span>
-                          <span className="text-muted-foreground">{chairman.name}</span>
-                        </div>
-                      )}
-                      {director && (
-                        <div className="flex items-center gap-1">
-                          <span className="text-blue-600 font-semibold">{directorIcon}</span>
-                          <span className="text-muted-foreground">{director.name}</span>
-                        </div>
-                      )}
-                      {!chairman && !director && <span className="text-gray-400">—</span>}
-                    </div>
-                  </TableCell>
-                  <TableCell
-                    className={cn(
-                      'font-semibold transition-colors duration-300',
-                      priceFlash[stock.symbol] === 'up' && 'bg-green-100 dark:bg-green-900/30',
-                      priceFlash[stock.symbol] === 'down' && 'bg-red-100 dark:bg-red-900/30'
-                    )}
+                  <div className="flex items-center gap-1">
+                    Symbol
+                    {sortBy === 'symbol' && <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>}
+                  </div>
+                </TableHead>
+                <TableHead>Leadership</TableHead>
+                <TableHead
+                  className="cursor-pointer hover:bg-muted"
+                  onClick={() => handleSort('price')}
+                >
+                  <div className="flex items-center gap-1">
+                    Price
+                    {sortBy === 'price' && <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>}
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer hover:bg-muted"
+                  onClick={() => handleSort('change')}
+                >
+                  <div className="flex items-center gap-1">
+                    Change
+                    {sortBy === 'change' && <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>}
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer hover:bg-muted"
+                  onClick={() => handleSort('available')}
+                >
+                  <div className="flex items-center gap-1">
+                    Available
+                    {sortBy === 'available' && <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>}
+                  </div>
+                </TableHead>
+                <TableHead>Details</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sortedStocks.map((stock, index) => {
+                // Calculate change from last round's price
+                const currentRoundIndex = gameState.currentRound - 1
+                const lastRoundPrice =
+                  currentRoundIndex > 0 && stock.priceHistory[currentRoundIndex - 1]
+                    ? stock.priceHistory[currentRoundIndex - 1].price
+                    : stock.priceHistory[0].price
+
+                const priceChange = stock.price - lastRoundPrice
+                const priceChangePercent =
+                  lastRoundPrice !== 0 ? (priceChange / lastRoundPrice) * 100 : 0
+
+                // Get leadership info for this stock
+                const chairman = stock.chairmanId
+                  ? gameState.players.find((p) => p.id === stock.chairmanId)
+                  : null
+                const director = stock.directorId
+                  ? gameState.players.find((p) => p.id === stock.directorId)
+                  : null
+
+                const isSelected = selectedSymbol === stock.symbol
+
+                return (
+                  <TableRow
+                    key={stock.symbol}
+                    className={`cursor-pointer hover:bg-muted keyboard-focusable-row ${
+                      isSelected ? 'keyboard-selected-row' : ''
+                    }`}
+                    tabIndex={0}
+                    onClick={() => {
+                      onSelectStock(stock.symbol)
+                      setFocusedIndex(index)
+                    }}
+                    onFocus={() => setFocusedIndex(index)}
+                    style={{
+                      backgroundColor: isSelected ? stock.color + '40' : undefined,
+                      borderLeft: `4px solid ${stock.color}`,
+                    }}
+                    data-stock-index={index}
                   >
-                    ${stock.price.toFixed(2)}
-                  </TableCell>
-                  <TableCell>
-                    {priceChange !== 0 ? (
-                      <span
-                        className={
-                          priceChange > 0
-                            ? 'text-green-600 font-medium'
-                            : 'text-red-600 font-medium'
-                        }
-                      >
-                        {priceChange > 0 ? '▲' : '▼'} ${Math.abs(priceChange).toFixed(2)}
-                        <span className="text-xs ml-1">
-                          ({priceChange > 0 ? '+' : ''}
-                          {priceChangePercent.toFixed(2)}%)
-                        </span>
-                      </span>
-                    ) : (
-                      <span className="text-gray-400">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {stock.availableQuantity.toLocaleString()}
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onViewDetails(stock)
-                      }}
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: stock.color }}
+                        />
+                        {stock.symbol}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-1 text-xs">
+                        {chairman && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-yellow-600 font-semibold">{chairmanIcon}</span>
+                            <span className="text-muted-foreground">{chairman.name}</span>
+                          </div>
+                        )}
+                        {director && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-blue-600 font-semibold">{directorIcon}</span>
+                            <span className="text-muted-foreground">{director.name}</span>
+                          </div>
+                        )}
+                        {!chairman && !director && <span className="text-gray-400">—</span>}
+                      </div>
+                    </TableCell>
+                    <TableCell
+                      className={cn(
+                        'font-semibold transition-colors duration-300',
+                        priceFlash[stock.symbol] === 'up' && 'bg-green-100 dark:bg-green-900/30',
+                        priceFlash[stock.symbol] === 'down' && 'bg-red-100 dark:bg-red-900/30'
+                      )}
                     >
-                      📊
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              )
-            })}
-          </TableBody>
-        </Table>
+                      ${stock.price.toFixed(2)}
+                    </TableCell>
+                    <TableCell>
+                      {priceChange !== 0 ? (
+                        <span
+                          className={
+                            priceChange > 0
+                              ? 'text-green-600 font-medium'
+                              : 'text-red-600 font-medium'
+                          }
+                        >
+                          {priceChange > 0 ? '▲' : '▼'} ${Math.abs(priceChange).toFixed(2)}
+                          <span className="text-xs ml-1">
+                            ({priceChange > 0 ? '+' : ''}
+                            {priceChangePercent.toFixed(2)}%)
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {stock.availableQuantity.toLocaleString()}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onViewDetails(stock)
+                        }}
+                      >
+                        📊
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
+            </TableBody>
+          </Table>
         </div>
       </CardContent>
     </Card>

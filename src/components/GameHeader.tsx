@@ -11,11 +11,7 @@ interface GameHeaderProps {
   onShowKeyboardHelp?: () => void
 }
 
-export function GameHeader({
-  gameState,
-  onViewLeaderboard,
-  onShowKeyboardHelp,
-}: GameHeaderProps) {
+export function GameHeader({ gameState, onViewLeaderboard, onShowKeyboardHelp }: GameHeaderProps) {
   const currentPlayer = gameState.players[gameState.currentPlayerIndex]
   const gameId = useGameStore((state) => state.gameId)
 

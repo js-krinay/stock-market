@@ -30,7 +30,6 @@ export function PlayerCardsDialog({
     return player?.name || 'Unknown Leader'
   }
 
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="!w-[75vw] !h-[75vh] !max-w-[75vw] !max-h-[75vh] flex flex-col">
