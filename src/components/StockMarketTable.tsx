@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/table'
 import { GameState, Stock } from '@/types'
 import { chairmanIcon, directorIcon } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 
 interface StockMarketTableProps {
@@ -29,6 +30,30 @@ export function StockMarketTable({
   const [sortBy, setSortBy] = useState<'symbol' | 'price' | 'change' | 'available'>('symbol')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [focusedIndex, setFocusedIndex] = useState<number>(-1)
+  const [priceFlash, setPriceFlash] = useState<Record<string, 'up' | 'down' | null>>({})
+  const previousPricesRef = useRef<Record<string, number>>({})
+
+  // Track price changes and trigger flash animation
+  useEffect(() => {
+    const newFlashes: Record<string, 'up' | 'down' | null> = {}
+    let hasChanges = false
+
+    gameState.stocks.forEach((stock) => {
+      const prevPrice = previousPricesRef.current[stock.symbol]
+      if (prevPrice !== undefined && prevPrice !== stock.price) {
+        newFlashes[stock.symbol] = stock.price > prevPrice ? 'up' : 'down'
+        hasChanges = true
+      }
+      previousPricesRef.current[stock.symbol] = stock.price
+    })
+
+    if (hasChanges) {
+      setPriceFlash(newFlashes)
+      // Clear flash after animation
+      const timer = setTimeout(() => setPriceFlash({}), 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [gameState.stocks])
 
   const handleSort = (column: 'symbol' | 'price' | 'change' | 'available') => {
     if (sortBy === column) {
@@ -174,6 +199,7 @@ export function StockMarketTable({
         <CardTitle>📈 Stock Market</CardTitle>
       </CardHeader>
       <CardContent>
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -284,7 +310,15 @@ export function StockMarketTable({
                       {!chairman && !director && <span className="text-gray-400">—</span>}
                     </div>
                   </TableCell>
-                  <TableCell className="font-semibold">${stock.price.toFixed(2)}</TableCell>
+                  <TableCell
+                    className={cn(
+                      'font-semibold transition-colors duration-300',
+                      priceFlash[stock.symbol] === 'up' && 'bg-green-100 dark:bg-green-900/30',
+                      priceFlash[stock.symbol] === 'down' && 'bg-red-100 dark:bg-red-900/30'
+                    )}
+                  >
+                    ${stock.price.toFixed(2)}
+                  </TableCell>
                   <TableCell>
                     {priceChange !== 0 ? (
                       <span
@@ -324,6 +358,7 @@ export function StockMarketTable({
             })}
           </TableBody>
         </Table>
+        </div>
       </CardContent>
     </Card>
   )

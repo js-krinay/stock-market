@@ -22,10 +22,16 @@ export function SetupScreen() {
     onSuccess: (data) => {
       setGameId(data.gameId)
       setView('game')
-      toast.success('Game started!')
+      toast.success('Game Started', {
+        description: 'Good luck and have fun!',
+        duration: 3000,
+      })
     },
     onError: (error) => {
-      toast.error(`Failed to start game: ${error.message}`)
+      toast.error('Failed to Start Game', {
+        description: error.message,
+        duration: 4000,
+      })
     },
   })
 
@@ -48,7 +54,10 @@ export function SetupScreen() {
   const handleStartGame = () => {
     const validNames = playerNames.slice(0, playerCount).filter((name) => name.trim().length > 0)
     if (validNames.length < 2) {
-      toast.error('Please enter at least 2 player names!')
+      toast.error('Invalid Setup', {
+        description: 'Please enter at least 2 player names',
+        duration: 4000,
+      })
       return
     }
     createGameMutation.mutate({
@@ -59,7 +68,10 @@ export function SetupScreen() {
 
   const handleJoinGame = async () => {
     if (!existingGameId.trim()) {
-      toast.error('Please enter a game ID!')
+      toast.error('Missing Game ID', {
+        description: 'Please enter a game ID to join',
+        duration: 4000,
+      })
       return
     }
 
@@ -68,13 +80,22 @@ export function SetupScreen() {
       if (result.data) {
         setGameId(existingGameId)
         setView('game')
-        toast.success('Connected to game!')
+        toast.success('Connected', {
+          description: 'Successfully joined the game!',
+          duration: 3000,
+        })
       }
     } catch (error: any) {
       if (error.message?.includes('Game not found')) {
-        toast.error('Game not found. Please check the game ID and try again.')
+        toast.error('Game Not Found', {
+          description: 'Please check the game ID and try again',
+          duration: 4000,
+        })
       } else {
-        toast.error(`Failed to connect: ${error.message || 'Unknown error'}`)
+        toast.error('Connection Failed', {
+          description: error.message || 'Unknown error occurred',
+          duration: 4000,
+        })
       }
     }
   }

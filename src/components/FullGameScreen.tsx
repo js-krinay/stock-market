@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useGameStore } from '@/store/gameStore'
 import { Stock, LeadershipInfo } from '@/types'
 import { GameHeader } from './GameHeader'
@@ -8,6 +8,7 @@ import { AllPlayersTable } from './AllPlayersTable'
 import { PortfolioTable } from './PortfolioTable'
 import { StockDetailsDialog } from './StockDetailsDialog'
 import { LeadershipExclusionDialog } from './LeadershipExclusionDialog'
+import { KeyboardShortcutsHelp } from './KeyboardShortcutsHelp'
 import { Spinner } from '@/components/ui/spinner'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import { toast } from 'sonner'
@@ -25,6 +26,8 @@ export function FullGameScreen() {
     active: boolean
     leaders: LeadershipInfo[]
   } | null>(null)
+  const [showKeyboardHelp, setShowKeyboardHelp] = useState(false)
+  const previousPlayerRef = useRef<string | null>(null)
 
   const { data: gameState, isLoading } = trpc.game.getGameState.useQuery(
     { gameId: gameId! },
@@ -119,8 +122,28 @@ export function FullGameScreen() {
         description: 'Open leaderboard',
         handler: () => setView('leaderboard'),
       },
+      {
+        key: '?',
+        shift: true,
+        description: 'Show keyboard shortcuts',
+        handler: () => setShowKeyboardHelp((prev) => !prev),
+      },
     ],
   })
+
+  // Turn transition feedback
+  useEffect(() => {
+    if (!gameState) return
+
+    const currentPlayerName = gameState.players[gameState.currentPlayerIndex]?.name
+    if (previousPlayerRef.current && previousPlayerRef.current !== currentPlayerName) {
+      toast.info(`${currentPlayerName}'s Turn`, {
+        description: `Round ${gameState.currentRound}, Turn ${gameState.currentTurnInRound}`,
+        duration: 2000,
+      })
+    }
+    previousPlayerRef.current = currentPlayerName
+  }, [gameState?.currentPlayerIndex, gameState?.currentRound, gameState?.currentTurnInRound])
 
   // Early return after all hooks
   if (isLoading || !gameState) {
@@ -201,9 +224,13 @@ export function FullGameScreen() {
     <div className="min-h-screen bg-background p-4">
       <div className="container mx-auto space-y-4">
         {/* Header */}
-        <GameHeader gameState={gameState} onViewLeaderboard={() => setView('leaderboard')} />
+        <GameHeader
+          gameState={gameState}
+          onViewLeaderboard={() => setView('leaderboard')}
+          onShowKeyboardHelp={() => setShowKeyboardHelp(true)}
+        />
 
-        <div className="grid md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Stock Market */}
           <StockMarketTable
             gameState={gameState}
@@ -243,6 +270,9 @@ export function FullGameScreen() {
         gameState={gameState}
         onClose={() => setSelectedStockDetails(null)}
       />
+
+      {/* Keyboard Shortcuts Help Dialog */}
+      <KeyboardShortcutsHelp open={showKeyboardHelp} onClose={() => setShowKeyboardHelp(false)} />
 
       {/* Leadership Exclusion Dialog */}
       {leadershipPhase?.active && gameState && (

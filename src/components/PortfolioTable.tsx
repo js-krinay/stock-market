@@ -35,7 +35,19 @@ interface PortfolioTableProps {
 
 export function PortfolioTable({ gameState, currentPlayer, portfolio }: PortfolioTableProps) {
   if (!portfolio || portfolio.holdings.length === 0) {
-    return null
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>💼 Your Portfolio</CardTitle>
+        </CardHeader>
+        <CardContent className="py-8 text-center">
+          <p className="text-muted-foreground">No holdings yet.</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Select a stock from the market and buy shares to start building your portfolio!
+          </p>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (

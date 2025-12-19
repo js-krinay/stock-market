@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Kbd } from '@/components/ui/kbd'
 import { GameState } from '@/types'
 import { toast } from 'sonner'
 import { useGameStore } from '@/store/gameStore'
@@ -7,16 +8,24 @@ import { useGameStore } from '@/store/gameStore'
 interface GameHeaderProps {
   gameState: GameState
   onViewLeaderboard: () => void
+  onShowKeyboardHelp?: () => void
 }
 
-export function GameHeader({ gameState, onViewLeaderboard }: GameHeaderProps) {
+export function GameHeader({
+  gameState,
+  onViewLeaderboard,
+  onShowKeyboardHelp,
+}: GameHeaderProps) {
   const currentPlayer = gameState.players[gameState.currentPlayerIndex]
   const gameId = useGameStore((state) => state.gameId)
 
   const copyGameId = () => {
     if (gameId) {
       navigator.clipboard.writeText(gameId)
-      toast.success('Game ID copied to clipboard!')
+      toast.success('Copied', {
+        description: 'Game ID copied to clipboard',
+        duration: 2000,
+      })
     }
   }
 
@@ -26,6 +35,17 @@ export function GameHeader({ gameState, onViewLeaderboard }: GameHeaderProps) {
         <CardTitle className="flex justify-between items-center flex-wrap gap-2">
           <span>🎮 Stock Market Game{gameState.isComplete && ' - Game Over!'}</span>
           <div className="flex gap-2 items-center">
+            {onShowKeyboardHelp && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onShowKeyboardHelp}
+                className="text-muted-foreground text-xs hidden sm:flex items-center gap-1"
+              >
+                <Kbd>?</Kbd>
+                <span>Shortcuts</span>
+              </Button>
+            )}
             <Button variant="ghost" size="sm" onClick={copyGameId} className="font-mono text-xs">
               📋 {gameId?.slice(0, 8)}...
             </Button>
